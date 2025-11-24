@@ -1,4 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
+    if (process.server) return;
+
     const { $auth } = useNuxtApp();
 
     // Wait for auth state to resolve (simple check)
