@@ -18,7 +18,7 @@
           class="auth-button google-btn"
         >
           <div class="icon-wrapper">
-            <img :src="googleIcon" alt="Google" class="w-5 h-5" />
+            <img src="/icons/google.svg" alt="Google" class="w-5 h-5" />
           </div>
           <span class="btn-text">{{ loading ? 'Вход...' : 'Войти через Google' }}</span>
         </button>
@@ -47,7 +47,6 @@
 
 <script setup lang="ts">
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import googleIcon from '@/public/google.svg';
 
 const { $auth } = useNuxtApp();
 const router = useRouter();
