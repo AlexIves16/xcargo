@@ -1,7 +1,7 @@
 <template>
-  <div class="dashboard-container min-h-screen bg-gray-50 relative">
+  <div class="dashboard-container h-screen bg-gray-50 relative overflow-hidden">
     <NavBar />
-    <div class="max-w-4xl mx-auto p-6 pt-24">
+    <div class="max-w-4xl mx-auto p-6 pt-24 h-full overflow-y-auto pb-32">
       <div class="flex justify-between items-center mb-8">
         <h1 class="text-2xl font-bold text-gray-800">Личный кабинет</h1>
         <div class="flex gap-4 items-center">

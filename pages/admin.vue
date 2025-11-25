@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-container min-h-screen bg-gray-100 p-6">
-    <div class="max-w-6xl mx-auto">
+  <div class="admin-container h-screen bg-gray-100 overflow-hidden">
+    <div class="max-w-6xl mx-auto p-6 pt-24 h-full overflow-y-auto pb-32">
       <div class="flex justify-between items-center mb-8">
         <h1 class="text-2xl font-bold text-gray-800">Панель Администратора</h1>
         <div class="flex gap-4">

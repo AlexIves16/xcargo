@@ -60,10 +60,11 @@ const currentYear = new Date().getFullYear();
 }
 
 .glass-footer {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.95); /* Белый фон */
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(0, 0, 0, 0.1); /* Темная граница сверху */
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); /* Тень сверху */
   padding: 1rem 1.5rem 0.75rem; /* Уменьшены отступы */
 }
 
