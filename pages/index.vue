@@ -18,7 +18,7 @@
           class="auth-button google-btn"
         >
           <div class="icon-wrapper">
-            <img src="/icons/google.svg" alt="Google" class="w-5 h-5" />
+            <img src="/google.svg" alt="Google" class="w-5 h-5" />
           </div>
           <span class="btn-text">{{ loading ? 'Вход...' : 'Войти через Google' }}</span>
         </button>
