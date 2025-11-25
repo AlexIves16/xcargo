@@ -5,13 +5,7 @@ export default defineNuxtConfig({
     baseURL: process.env.BASE_URL || '',
   },
 
-  routeRules: {
-    '/**': {
-      headers: {
-        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
-      }
-    }
-  },
+
 
   modules: ['@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
 
