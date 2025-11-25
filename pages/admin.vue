@@ -78,7 +78,7 @@ const isAdmin = ref(false);
 const ADMIN_EMAIL = 'akairfakomylife@gmail.com'; 
 
 onMounted(() => {
-  if (!$auth.currentUser) return;
+  if (!$auth?.currentUser) return;
 
   // Simple client-side check (real security is in Firestore Rules)
   if ($auth.currentUser.email === ADMIN_EMAIL) {

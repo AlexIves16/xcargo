@@ -88,11 +88,11 @@ const loading = ref(false);
 const loadingData = ref(true);
 const error = ref('');
 
-const isAdmin = computed(() => $auth.currentUser?.email === 'akairfakomylife@gmail.com');
+const isAdmin = computed(() => $auth?.currentUser?.email === 'akairfakomylife@gmail.com');
 
 // Load tracks
 onMounted(() => {
-  if (!$auth.currentUser) return;
+  if (!$auth?.currentUser) return;
 
   const q = query(
     collection($db, 'tracks'),
