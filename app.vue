@@ -113,7 +113,8 @@ body, html, .app-container {
 <style scoped>
 .app-container {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* Отключаем скролл */
 }
 
 .background-image {
@@ -129,7 +130,7 @@ body, html, .app-container {
 }
 
 .overlay {
-  position: absolute; /* Ограничиваем область покрытия контейнером */
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -142,9 +143,8 @@ body, html, .app-container {
   z-index: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 100vh;
-  color: var(--tg-theme-text-color, #000); /* Применяем глобальный текстовый цвет */
+  height: 100vh;
+  color: var(--tg-theme-text-color, #000);
 }
 
 .page-wrapper {
@@ -153,5 +153,6 @@ body, html, .app-container {
   justify-content: center;
   align-items: center;
   width: 100%;
+  overflow-y: auto; /* Скролл только для контента страницы, если нужно */
 }
 </style>

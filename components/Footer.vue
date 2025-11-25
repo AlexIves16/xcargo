@@ -33,7 +33,7 @@
         <div class="footer-section">
           <h4 class="footer-heading">Контакты</h4>
           <p class="footer-text">Email: info@xprc.kz</p>
-          <p class="footer-text">Телефон: +7 (XXX) XXX-XX-XX</p>
+          <p class="footer-text">Телефон: +7 708 764 8100</p>
         </div>
       </div>
 
@@ -54,9 +54,9 @@ const currentYear = new Date().getFullYear();
 <style scoped>
 .footer-container {
   width: 100%;
-  margin-top: auto;
   position: relative;
   z-index: 1;
+  flex-shrink: 0; /* Не сжимается */
 }
 
 .glass-footer {
@@ -64,43 +64,43 @@ const currentYear = new Date().getFullYear();
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 3rem 2rem 1.5rem;
+  padding: 1rem 1.5rem 0.75rem; /* Уменьшены отступы */
 }
 
 .footer-content {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem; /* Уменьшен gap */
+  margin-bottom: 0.75rem; /* Уменьшен отступ */
 }
 
 .footer-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem; /* Уменьшен gap */
 }
 
 .footer-title {
-  font-size: 1.5rem;
+  font-size: 1.1rem; /* Уменьшен размер */
   font-weight: 700;
   color: #1a1a1a;
   margin: 0;
 }
 
 .footer-description {
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Уменьшен размер */
   color: #4a4a4a;
-  line-height: 1.5;
+  line-height: 1.4;
   margin: 0;
 }
 
 .footer-heading {
-  font-size: 1rem;
+  font-size: 0.85rem; /* Уменьшен размер */
   font-weight: 600;
   color: #1a1a1a;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.3rem 0;
 }
 
 .footer-links {
@@ -109,13 +109,13 @@ const currentYear = new Date().getFullYear();
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem; /* Уменьшен gap */
 }
 
 .footer-link {
   color: #4a4a4a;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Уменьшен размер */
   transition: color 0.2s ease, transform 0.2s ease;
   display: inline-block;
 }
@@ -126,19 +126,19 @@ const currentYear = new Date().getFullYear();
 }
 
 .footer-text {
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Уменьшен размер */
   color: #4a4a4a;
-  margin: 0.25rem 0;
+  margin: 0.15rem 0;
 }
 
 .footer-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding-top: 1.5rem;
+  padding-top: 0.75rem; /* Уменьшен отступ */
   text-align: center;
 }
 
 .copyright {
-  font-size: 0.85rem;
+  font-size: 0.75rem; /* Уменьшен размер */
   color: #666;
   margin: 0;
 }
@@ -146,16 +146,16 @@ const currentYear = new Date().getFullYear();
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
   .glass-footer {
-    padding: 2rem 1rem 1rem;
+    padding: 0.75rem 1rem 0.5rem; /* Еще меньше для мобильных */
   }
 
   .footer-content {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 0.75rem;
   }
 
   .footer-title {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
 
   .footer-section {

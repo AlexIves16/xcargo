@@ -125,6 +125,8 @@ const addTrackNumber = async () => {
     await addDoc(collection($db, 'tracks'), {
       number: newTrackNumber.value.trim(),
       userId: $auth.currentUser.uid,
+      userEmail: $auth.currentUser.email,
+      userName: $auth.currentUser.displayName || 'Пользователь',
       createdAt: serverTimestamp(),
       status: 'pending' // pending, in_transit, delivered
     });
