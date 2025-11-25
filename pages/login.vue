@@ -8,7 +8,7 @@
         :disabled="loading"
         class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
       >
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-6 h-6" />
+        <img src="/icons/google.svg" alt="Google" class="w-6 h-6" />
         <span>{{ loading ? 'Вход...' : 'Войти через Google' }}</span>
       </button>
 
