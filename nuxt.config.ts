@@ -5,12 +5,8 @@ export default defineNuxtConfig({
     baseURL: process.env.BASE_URL || '/',
   },
 
-  // @ts-ignore
   nitro: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-      'Cross-Origin-Embedder-Policy': 'unsafe-none',
-    }
+    plugins: ['~/server/plugins/coep.ts']
   },
   routeRules: {
     '/**': {
