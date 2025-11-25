@@ -5,6 +5,22 @@ export default defineNuxtConfig({
     baseURL: process.env.BASE_URL || '',
   },
 
+  routeRules: {
+    '/**': {
+      headers: {
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://challenges.cloudflare.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; font-src 'self' data:;"
+      }
+    }
+  },
+
+  routeRules: {
+    '/**': {
+      headers: {
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' https://www.gstatic.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; font-src 'self' data:;"
+      }
+    }
+  },
+
 
 
   modules: ['@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
