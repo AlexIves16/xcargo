@@ -11,7 +11,7 @@ export default defineNuxtConfig({
   routeRules: {
     '/**': {
       headers: {
-        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.googletagmanager.com https://firebase.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://www.svgrepo.com; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com; font-src 'self' data:; frame-src 'self' https://xcargo-4853b.firebaseapp.com https://www.googletagmanager.com https://yandex.kz https://accounts.google.com; frame-ancestors 'self';",
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.googletagmanager.com https://firebase.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://www.svgrepo.com; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com https://firebaseinstallations.googleapis.com; font-src 'self' data:; frame-src 'self' https://xcargo-4853b.firebaseapp.com https://www.googletagmanager.com https://yandex.kz https://accounts.google.com; frame-ancestors 'self';",
       }
     }
   },
@@ -43,10 +43,10 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      navigateFallback: '/index.html',
+      skipWaiting: true,
+      clientsClaim: true,
       // Исправляем precache ошибку
       globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-      navigateFallbackDenylist: [/^\/api\//],
       cleanupOutdatedCaches: true,
       runtimeCaching: [
         {

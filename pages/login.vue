@@ -20,12 +20,26 @@
 </template>
 
 <script setup lang="ts">
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 
 const { $auth } = useNuxtApp();
 const router = useRouter();
 const loading = ref(false);
 const error = ref('');
+
+// Проверяем результат редиректа при загрузке страницы
+onMounted(async () => {
+  try {
+    const result = await getRedirectResult($auth);
+    if (result?.user) {
+      // Пользователь успешно вошёл после редиректа
+      router.push('/dashboard');
+    }
+  } catch (e: any) {
+    console.error('Redirect result error:', e);
+    error.value = 'Ошибка при входе. Попробуйте снова.';
+  }
+});
 
 const signInWithGoogle = async () => {
   loading.value = true;
@@ -33,16 +47,13 @@ const signInWithGoogle = async () => {
   
   try {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup($auth, provider);
-    router.push('/dashboard');
+    // Используем редирект вместо popup - это полностью убирает COOP warnings
+    await signInWithRedirect($auth, provider);
+    // После этого произойдёт редирект на Google, а потом обратно
+    // onMounted обработает результат
   } catch (e: any) {
     console.error('Login error:', e);
-    if (e.code === 'auth/popup-closed-by-user') {
-      error.value = 'Вход отменен пользователем.';
-    } else {
-      error.value = 'Ошибка при входе. Проверьте консоль Firebase.';
-    }
-  } finally {
+    error.value = 'Ошибка при входе. Проверьте консоль Firebase.';
     loading.value = false;
   }
 };
