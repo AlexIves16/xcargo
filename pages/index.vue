@@ -36,12 +36,16 @@
 
       <p v-if="error" class="text-red-500 text-xs text-center mt-1">{{ error }}</p>
       <p class="text-xs text-gray-500 text-center mt-2">Защищено Google reCAPTCHA</p>
+      
+      <!-- Кнопка установки PWA только на главной странице и только если приложение не установлено -->
+      <InstallPwa />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import InstallPwa from '~/components/InstallPwa.vue';
 
 const { $auth } = useNuxtApp();
 const router = useRouter();
