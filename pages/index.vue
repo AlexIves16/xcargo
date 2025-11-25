@@ -14,7 +14,7 @@
         <!-- Google Sign In -->
         <button 
           @click="handleGoogleLogin" 
-          :disabled="!turnstileToken || loading"
+          :disabled="loading"
           class="auth-button google-btn"
         >
           <div class="icon-wrapper">
@@ -35,76 +35,37 @@
         </button>
       </div>
 
-      <!-- Cloudflare Turnstile -->
-      <div class="turnstile-wrapper">
-        <TurnstileWidget @verify="onTurnstileVerify" @expire="onTurnstileExpire" />
-      </div>
-
       <p v-if="error" class="text-red-500 text-xs text-center mt-1">{{ error }}</p>
+      <p class="text-xs text-gray-500 text-center mt-2">Защищено Google reCAPTCHA</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 const { $auth } = useNuxtApp();
 const router = useRouter();
 
 const loading = ref(false);
 const error = ref('');
-const turnstileToken = ref('');
-
-// Check for redirect result on mount
-onMounted(async () => {
-  loading.value = true;
-  try {
-    const result = await getRedirectResult($auth);
-    if (result?.user) {
-      console.log('Redirect auth successful, user:', result.user.email);
-      await router.push('/dashboard');
-    } else {
-      console.log('No redirect result found');
-    }
-  } catch (e: any) {
-    console.error('Redirect error:', e);
-    if (e.code === 'auth/unauthorized-domain') {
-      error.value = 'Домен не авторизован в Firebase Console.';
-    } else if (e.code && e.code !== 'auth/popup-closed-by-user') {
-      error.value = 'Ошибка при входе: ' + e.message;
-    }
-  } finally {
-    loading.value = false;
-  }
-});
-
-const onTurnstileVerify = (token: string) => {
-  turnstileToken.value = token;
-  error.value = '';
-};
-
-const onTurnstileExpire = () => {
-  turnstileToken.value = '';
-  error.value = 'Проверка безопасности истекла.';
-};
 
 const handleGoogleLogin = async () => {
-  if (!turnstileToken.value) {
-    error.value = 'Пожалуйста, пройдите проверку безопасности.';
-    return;
-  }
-
   loading.value = true;
   error.value = '';
 
   try {
     const provider = new GoogleAuthProvider();
-    console.log('Starting Google redirect...');
-    await signInWithRedirect($auth, provider);
-    // Redirect will happen automatically
+    await signInWithPopup($auth, provider);
+    router.push('/dashboard');
   } catch (e: any) {
     console.error('Login error:', e);
-    error.value = 'Ошибка при входе.';
+    if (e.code === 'auth/popup-closed-by-user') {
+      error.value = 'Вход отменен.';
+    } else {
+      error.value = 'Ошибка при входе.';
+    }
+  } finally {
     loading.value = false;
   }
 };
@@ -162,10 +123,5 @@ const handleGoogleLogin = async () => {
 .btn-text {
   flex: 1;
   text-align: left;
-}
-
-.turnstile-wrapper {
-  transform: scale(0.85);
-  transform-origin: center;
 }
 </style>
