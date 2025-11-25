@@ -8,7 +8,9 @@ export default defineNuxtConfig({
   routeRules: {
     '/**': {
       headers: {
-        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.googletagmanager.com https://firebase.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com; font-src 'self' data:; frame-src 'self' https://xcargo-4853b.firebaseapp.com https://www.googletagmanager.com https://yandex.kz; frame-ancestors 'self';"
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.googletagmanager.com https://firebase.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com; font-src 'self' data:; frame-src 'self' https://xcargo-4853b.firebaseapp.com https://www.googletagmanager.com https://yandex.kz; frame-ancestors 'self';",
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+        'Cross-Origin-Embedder-Policy': 'require-corp'
       }
     }
   },
@@ -40,7 +42,25 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      navigateFallback: '/'
+      navigateFallback: '/',
+      // Добавляем корневой маршрут в precache
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      // Игнорируем некоторые маршруты
+      navigateFallbackDenylist: [/^\/api\//],
+      cleanupOutdatedCaches: true,
+      runtimeCaching: [
+        {
+          urlPattern: /^\/$/,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'homepage-cache',
+            expiration: {
+              maxEntries: 10,
+              maxAgeSeconds: 60 * 60 * 24 // 24 часа
+            }
+          }
+        }
+      ]
     },
     devOptions: {
       enabled: true,
