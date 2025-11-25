@@ -60,8 +60,25 @@ const handleGoogleLogin = async () => {
 
   try {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup($auth, provider);
-    router.push('/dashboard');
+    const result = await signInWithPopup($auth, provider);
+    
+    // Проверяем, является ли пользователь администратором
+    const ADMIN_EMAIL = 'kairfakomylife@gmail.com';
+    const userEmail = result.user.email;
+    
+    console.log('=== LOGIN DEBUG ===');
+    console.log('User email:', userEmail);
+    console.log('Admin email:', ADMIN_EMAIL);
+    console.log('Is admin?', userEmail === ADMIN_EMAIL);
+    console.log('==================');
+    
+    if (userEmail === ADMIN_EMAIL) {
+      console.log('Redirecting to /admin');
+      await router.push('/admin');
+    } else {
+      console.log('Redirecting to /dashboard');
+      await router.push('/dashboard');
+    }
   } catch (e: any) {
     console.error('Login error:', e);
     if (e.code === 'auth/popup-closed-by-user') {

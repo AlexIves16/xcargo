@@ -25,6 +25,7 @@
           <thead class="bg-gray-50">
             <tr>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Трек-номер</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Пользователь</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
@@ -34,6 +35,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="track in tracks" :key="track.id">
               <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{{ track.number }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ track.userEmail || 'Загрузка...' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" :title="track.userId">{{ truncate(track.userId, 8) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(track.createdAt) }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
@@ -60,7 +62,7 @@
 </template>
 
 <script setup>
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 
 definePageMeta({
@@ -74,8 +76,8 @@ const tracks = ref([]);
 const loading = ref(true);
 const isAdmin = ref(false);
 
-// Replace with your actual admin email or logic
-const ADMIN_EMAIL = 'akairfakomylife@gmail.com'; 
+// Admin email
+const ADMIN_EMAIL = 'kairfakomylife@gmail.com'; 
 
 onMounted(() => {
   if (!$auth?.currentUser) return;
@@ -96,11 +98,33 @@ const loadAllTracks = () => {
     orderBy('createdAt', 'desc')
   );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    tracks.value = snapshot.docs.map(doc => ({
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const tracksData = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    // Получаем email пользователей
+    for (const track of tracksData) {
+      if (track.userId) {
+        try {
+          // Пытаемся получить email из коллекции users
+          const userDocRef = doc($db, 'users', track.userId);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            track.userEmail = userDoc.data().email;
+          } else {
+            // Если нет в Firestore, используем userId как fallback
+            track.userEmail = track.userId;
+          }
+        } catch (e) {
+          console.error('Error fetching user email:', e);
+          track.userEmail = track.userId;
+        }
+      }
+    }
+    
+    tracks.value = tracksData;
     loading.value = false;
   }, (err) => {
     console.error("Error fetching all tracks:", err);

@@ -16,7 +16,12 @@
 
     <!-- Контент приложения -->
     <div class="content">
-      <NuxtPage />
+      <div class="page-wrapper">
+        <NuxtPage />
+      </div>
+      
+      <!-- Footer на всех страницах -->
+      <Footer />
     </div>
   </div>
 </template>
@@ -136,9 +141,17 @@ body, html, .app-container {
   position: relative;
   z-index: 0;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  justify-content: space-between;
   min-height: 100vh;
   color: var(--tg-theme-text-color, #000); /* Применяем глобальный текстовый цвет */
+}
+
+.page-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 </style>
