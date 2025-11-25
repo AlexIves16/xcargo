@@ -29,7 +29,7 @@
           class="auth-button apple-btn"
         >
           <div class="icon-wrapper">
-            <img src="https://www.svgrepo.com/show/445633/apple.svg" alt="Apple" class="w-5 h-5 invert" />
+            <img src="/apple.svg" alt="Apple" class="w-5 h-5 invert" />
           </div>
           <span class="btn-text">Войти через Apple</span>
         </button>

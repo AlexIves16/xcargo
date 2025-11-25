@@ -1,39 +1,48 @@
 // server/api/getSheetData.js
 
 import { google } from 'googleapis';
-import path from 'path';
 
 export default defineEventHandler(async (event) => {
-  // Путь к файлу ключей сервисного аккаунта
-  const keyFilePath = path.resolve('caramel-element-435516-g5-0f060438cf78.json');
-
+  // Get credentials from environment variables
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+  
   // ID Google Sheets
-  const spreadsheetId = '1JofB8mYGEyfg8t0CbkZC0o-8GMKY0s63QqXRl3ddWVc';
+  const spreadsheetId = process.env.SPREADSHEET_ID || '1JofB8mYGEyfg8t0CbkZC0o-8GMKY0s63QqXRl3ddWVc';
 
-  // Настраиваем аутентификацию с использованием ключа сервисного аккаунта
+  // Validate environment variables
+  if (!clientEmail || !privateKey) {
+    console.error('Missing Google service account credentials');
+    return { error: 'Server configuration error' };
+  }
+
+  // Configure authentication using service account credentials
   const auth = new google.auth.GoogleAuth({
-    keyFile: keyFilePath,
+    credentials: {
+      client_email: clientEmail,
+      private_key: privateKey.replace(/\\n/g, '\n')
+    },
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
   });
 
   try {
-    // Получаем клиент для аутентификации
+    // Get authenticated client
     const authClient = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient });
 
-    // Получаем данные из Google Sheets
+    // Get data from Google Sheets
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'A:E', // Извлекаем все строки и столбцы от A до E
+      range: 'A:E', // Extract all rows and columns from A to E
     });
 
     const rows = response.data.values;
 
     if (rows && rows.length) {
       const formattedData = rows
-        .filter(row => row && row.length > 0) // Убираем пустые строки
-        .map(row => row.map(cell => cell || '')); // Заменяем null/undefined на пустую строку
-      // Возвращаем данные
+        .filter(row => row && row.length > 0) // Remove empty rows
+        .map(row => row.map(cell => cell || '')); // Replace null/undefined with empty string
+      // Return data
       return { data: formattedData };
     } else {
       return { error: 'Нет данных в таблице' };
