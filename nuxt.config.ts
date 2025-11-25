@@ -21,6 +21,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
 
   pwa: {
+    registerType: 'autoUpdate',
     manifest: {
       name: 'Xpress Cargo',
       short_name: 'Xcargo',
@@ -29,33 +30,56 @@ export default defineNuxtConfig({
       background_color: '#ffffff',
       display: 'standalone',
       orientation: 'portrait',
+      start_url: '/',
+      scope: '/',
       icons: [
         {
-          src: 'pwa-192x192.png',
+          src: '/pwa-192x192.png',
           sizes: '192x192',
-          type: 'image/png'
+          type: 'image/png',
+          purpose: 'any maskable'
         },
         {
-          src: 'pwa-512x512.png',
+          src: '/pwa-512x512.png',
           sizes: '512x512',
-          type: 'image/png'
+          type: 'image/png',
+          purpose: 'any maskable'
+        },
+        {
+          src: '/logo.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any'
         }
       ]
     },
     workbox: {
       skipWaiting: true,
       clientsClaim: true,
-      // Исправляем precache ошибку
-      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}'],
       cleanupOutdatedCaches: true,
       runtimeCaching: [
         {
-          urlPattern: /^\/$/,
-          handler: 'NetworkFirst',
+          urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+          handler: 'CacheFirst',
           options: {
-            cacheName: 'homepage-cache',
+            cacheName: 'google-fonts-cache',
             expiration: {
               maxEntries: 10,
+              maxAgeSeconds: 60 * 60 * 24 * 365 // 1 год
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
+        {
+          urlPattern: /^\//,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'pages-cache',
+            expiration: {
+              maxEntries: 50,
               maxAgeSeconds: 60 * 60 * 24 // 24 часа
             }
           }
@@ -63,7 +87,7 @@ export default defineNuxtConfig({
       ]
     },
     devOptions: {
-      enabled: false, // Отключаем PWA в режиме разработки
+      enabled: true, // Включаем PWA в режиме разработки для тестирования
       type: 'module',
       suppressWarnings: true
     }

@@ -2,25 +2,6 @@
   <footer class="footer-container">
     <div class="glass-footer">
       <div class="footer-content">
-        <!-- Логотип и описание -->
-        <div class="footer-section">
-          <h3 class="footer-title">Xpress Cargo</h3>
-          <p class="footer-description">
-            Доставка грузов из Китая в Казахстан
-          </p>
-        </div>
-
-        <!-- Навигация -->
-        <div class="footer-section">
-          <h4 class="footer-heading">Навигация</h4>
-          <ul class="footer-links">
-            <li><NuxtLink to="/services" class="footer-link">Услуги</NuxtLink></li>
-            <li><NuxtLink to="/about" class="footer-link">О нас</NuxtLink></li>
-            <li><NuxtLink to="/contact" class="footer-link">Контакты</NuxtLink></li>
-            <li><NuxtLink to="/search" class="footer-link">Отслеживание</NuxtLink></li>
-          </ul>
-        </div>
-
         <!-- Юридическая информация -->
         <div class="footer-section">
           <h4 class="footer-heading">Информация</h4>
@@ -72,9 +53,9 @@ const currentYear = new Date().getFullYear();
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem; /* Уменьшен gap */
-  margin-bottom: 0.75rem; /* Уменьшен отступ */
+  grid-template-columns: repeat(2, 1fr); /* Только 2 колонки */
+  gap: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .footer-section {
