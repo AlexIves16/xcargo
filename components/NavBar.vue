@@ -7,10 +7,39 @@
         <NuxtLink to="/contact" class="nav-link text-xs md:text-base whitespace-nowrap">Контакты</NuxtLink>
         <NuxtLink to="/search" class="nav-link text-xs md:text-base whitespace-nowrap">Отслеживание</NuxtLink>
       </div>
-      <NuxtLink to="/" class="login-button text-xs md:text-base whitespace-nowrap">Войти</NuxtLink>
+      <NuxtLink v-if="!isHomePage && !isAuthenticated" to="/" class="login-button text-xs md:text-base whitespace-nowrap">Войти</NuxtLink>
     </div>
   </nav>
 </template>
+
+<script setup>
+import { useNuxtApp } from '#app';
+import { onMounted, ref } from 'vue';
+
+const props = defineProps({
+  isHomePage: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const isAuthenticated = ref(false);
+
+onMounted(async () => {
+  try {
+    const { $auth } = useNuxtApp();
+    if ($auth) {
+      isAuthenticated.value = !!$auth.currentUser;
+      // Also listen for auth state changes
+      $auth.onAuthStateChanged(user => {
+        isAuthenticated.value = !!user;
+      });
+    }
+  } catch (error) {
+    console.log('Error checking auth state:', error);
+  }
+});
+</script>
 
 <style scoped>
 .glass-nav {
@@ -34,7 +63,7 @@
 }
 
 .nav-link {
-  color: #333;
+  color: var(--tg-theme-button-color, #2481cc); /* Голубой цвет для лучшей читаемости */
   text-decoration: none;
   font-weight: 500;
   font-size: 0.75rem; /* Уменьшенный шрифт для мобильной версии */
@@ -64,13 +93,12 @@
 }
 
 .login-button {
-  color: #333;
+  color: var(--tg-theme-button-text-color, #ffffff); /* Белый цвет текста для контраста */
   text-decoration: none;
   font-weight: 500;
   font-size: 0.75rem; /* Уменьшенный шрифт для мобильной версии */
   transition: all 0.3s ease;
   background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #ffffff);
   padding: 4px 10px; /* Уменьшенные отступы */
   border-radius: 6px; /* Меньший радиус скругления */
   position: relative;
@@ -107,7 +135,7 @@
 @media (prefers-color-scheme: dark) {
   .nav-link { color: #e5e5e5; }
   .nav-link:hover { color: #fff; }
-  .login-button { color: #e5e5e5; }
+  .login-button { color: var(--tg-theme-button-text-color, #ffffff); }
   .login-button:hover { color: #fff; }
 }
 </style>

@@ -15,7 +15,7 @@
     <div v-if="showOverlay" class="overlay"></div>
 
     <!-- Шапка на всех страницах -->
-    <NavBar />
+    <NavBar :is-home-page="isHomePage" />
 
     <!-- Контент приложения -->
     <div class="content">
