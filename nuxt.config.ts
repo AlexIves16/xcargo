@@ -3,6 +3,17 @@ import 'dotenv/config';
 export default defineNuxtConfig({
   app: {
     baseURL: process.env.BASE_URL || '/',
+    head: {
+      title: 'Xpress Cargo',
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' },
+        { name: 'theme-color', content: '#ffffff' }
+      ],
+      link: [
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ]
+    }
   },
 
   nitro: {
@@ -51,6 +62,22 @@ export default defineNuxtConfig({
           sizes: '512x512',
           type: 'image/png',
           purpose: 'any'
+        }
+      ],
+      screenshots: [
+        {
+          src: '/b1.jpg',
+          sizes: '1280x720',
+          type: 'image/jpeg',
+          form_factor: 'wide',
+          label: 'Главная страница'
+        },
+        {
+          src: '/b2.jpg',
+          sizes: '1280x720',
+          type: 'image/jpeg',
+          form_factor: 'narrow',
+          label: 'Мобильная версия'
         }
       ]
     },

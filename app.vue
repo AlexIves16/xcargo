@@ -16,7 +16,7 @@
 
     <!-- Контент приложения -->
     <div class="content">
-      <div class="page-wrapper">
+      <div class="page-wrapper" :class="{ 'no-scroll': isHomePage }">
         <NuxtPage />
       </div>
       
@@ -32,9 +32,11 @@ import { useRoute } from 'vue-router';
 
 const route = useRoute();
 
+// Определяем, является ли текущая страница главной
+const isHomePage = computed(() => route.path === '/');
+
 // Определяем, показывать ли подложку
 const showOverlay = computed(() => {
-  // Замените '/' на путь вашей первой страницы, если он отличается
   return route.path !== '/';
 });
 
@@ -148,15 +150,18 @@ body, html, .app-container {
 }
 
 .page-wrapper {
-  flex: 1;
+  position: absolute; /* Абсолютное позиционирование */
+  top: 70px;          /* Отступ сверху (под шапку) */
+  bottom: 90px;       /* Отступ снизу (под футер) */
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Изменено с center, чтобы контент начинался сверху */
-  width: 100%;
-  height: 100%; /* Занимает всю высоту */
-  overflow-y: auto; /* Скролл контента */
-  padding-top: 80px; /* Отступ под шапку */
-  padding-bottom: 180px; /* Отступ под футер */
-  box-sizing: border-box;
+  align-items: center; /* Центрирование */
+  overflow-y: auto;    /* Скролл только если контент не влезает */
+}
+
+.page-wrapper.no-scroll {
+  overflow: hidden; /* Отключаем скролл на главной */
 }
 </style>

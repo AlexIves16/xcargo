@@ -1,17 +1,13 @@
 <template>
-  <div class="home flex items-center justify-center min-h-screen p-4 relative">
-    <!-- Navigation -->
+  <div class="home flex items-center justify-center w-full overflow-hidden relative">
     <NavBar />
 
-    <!-- Glassmorphism Card -->
-    <div class="glass-card w-full max-w-md p-8 rounded-2xl flex flex-col items-center gap-6 mt-16">
-      
+    <div class="glass-card w-full max-w-md p-8 rounded-2xl flex flex-col items-center gap-6">
       <h1 class="text-xl font-semibold text-gray-800 dark:text-white text-center mb-2">
         Вход в систему
       </h1>
 
       <div class="w-full flex flex-col gap-3">
-        <!-- Google Sign In -->
         <button 
           @click="handleGoogleLogin" 
           :disabled="loading"
@@ -23,7 +19,6 @@
           <span class="btn-text">{{ loading ? 'Вход...' : 'Войти через Google' }}</span>
         </button>
 
-        <!-- Apple Sign In (Placeholder) -->
         <button 
           disabled
           class="auth-button apple-btn"
@@ -62,21 +57,12 @@ const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup($auth, provider);
     
-    // Проверяем, является ли пользователь администратором
     const ADMIN_EMAIL = 'kairfakomylife@gmail.com';
     const userEmail = result.user.email;
     
-    console.log('=== LOGIN DEBUG ===');
-    console.log('User email:', userEmail);
-    console.log('Admin email:', ADMIN_EMAIL);
-    console.log('Is admin?', userEmail === ADMIN_EMAIL);
-    console.log('==================');
-    
     if (userEmail === ADMIN_EMAIL) {
-      console.log('Redirecting to /admin');
       await router.push('/admin');
     } else {
-      console.log('Redirecting to /dashboard');
       await router.push('/dashboard');
     }
   } catch (e: any) {
