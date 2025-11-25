@@ -57,16 +57,24 @@ const turnstileToken = ref('');
 
 // Check for redirect result on mount
 onMounted(async () => {
+  loading.value = true;
   try {
     const result = await getRedirectResult($auth);
     if (result?.user) {
-      router.push('/dashboard');
+      console.log('Redirect auth successful, user:', result.user.email);
+      await router.push('/dashboard');
+    } else {
+      console.log('No redirect result found');
     }
   } catch (e: any) {
     console.error('Redirect error:', e);
-    if (e.code !== 'auth/popup-closed-by-user') {
-      error.value = 'Ошибка при входе.';
+    if (e.code === 'auth/unauthorized-domain') {
+      error.value = 'Домен не авторизован в Firebase Console.';
+    } else if (e.code && e.code !== 'auth/popup-closed-by-user') {
+      error.value = 'Ошибка при входе: ' + e.message;
     }
+  } finally {
+    loading.value = false;
   }
 });
 
@@ -91,6 +99,7 @@ const handleGoogleLogin = async () => {
 
   try {
     const provider = new GoogleAuthProvider();
+    console.log('Starting Google redirect...');
     await signInWithRedirect($auth, provider);
     // Redirect will happen automatically
   } catch (e: any) {

@@ -16,12 +16,6 @@ export default defineNuxtPlugin((nuxtApp) => {
     measurementId: config.public.firebaseMeasurementId
   };
 
-  console.log('Firebase Config Debug:', {
-    apiKey: firebaseConfig.apiKey ? '***' : 'MISSING',
-    projectId: firebaseConfig.projectId,
-    authDomain: firebaseConfig.authDomain
-  });
-
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
