@@ -35,10 +35,12 @@ const currentYear = new Date().getFullYear();
 <style scoped>
 .footer-container {
   width: 100%;
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0; /* Не сжимается */
+  position: fixed; /* Фиксируем */
+  bottom: 0;       /* Внизу */
+  left: 0;
+  z-index: 50;     /* Поверх контента */
 }
+
 
 .glass-footer {
   background: rgba(255, 255, 255, 0.95); /* Белый фон */

@@ -151,8 +151,12 @@ body, html, .app-container {
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Изменено с center, чтобы контент начинался сверху */
   width: 100%;
-  overflow-y: auto; /* Скролл только для контента страницы, если нужно */
+  height: 100%; /* Занимает всю высоту */
+  overflow-y: auto; /* Скролл контента */
+  padding-top: 80px; /* Отступ под шапку */
+  padding-bottom: 180px; /* Отступ под футер */
+  box-sizing: border-box;
 }
 </style>

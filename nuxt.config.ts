@@ -23,6 +23,7 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
+      id: '/',
       name: 'Xpress Cargo',
       short_name: 'Xcargo',
       description: 'Доставка грузов из Китая в Казахстан',
@@ -54,6 +55,7 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
+      navigateFallback: '/',
       skipWaiting: true,
       clientsClaim: true,
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}'],
@@ -87,7 +89,7 @@ export default defineNuxtConfig({
       ]
     },
     devOptions: {
-      enabled: true, // Включаем PWA в режиме разработки для тестирования
+      enabled: true,
       type: 'module',
       suppressWarnings: true
     }
