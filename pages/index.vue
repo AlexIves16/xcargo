@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 
 const { $auth } = useNuxtApp();
 const router = useRouter();
@@ -54,6 +54,21 @@ const router = useRouter();
 const loading = ref(false);
 const error = ref('');
 const turnstileToken = ref('');
+
+// Check for redirect result on mount
+onMounted(async () => {
+  try {
+    const result = await getRedirectResult($auth);
+    if (result?.user) {
+      router.push('/dashboard');
+    }
+  } catch (e: any) {
+    console.error('Redirect error:', e);
+    if (e.code !== 'auth/popup-closed-by-user') {
+      error.value = 'Ошибка при входе.';
+    }
+  }
+});
 
 const onTurnstileVerify = (token: string) => {
   turnstileToken.value = token;
@@ -76,16 +91,11 @@ const handleGoogleLogin = async () => {
 
   try {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup($auth, provider);
-    router.push('/dashboard');
+    await signInWithRedirect($auth, provider);
+    // Redirect will happen automatically
   } catch (e: any) {
     console.error('Login error:', e);
-    if (e.code === 'auth/popup-closed-by-user') {
-      error.value = 'Вход отменен.';
-    } else {
-      error.value = 'Ошибка при входе.';
-    }
-  } finally {
+    error.value = 'Ошибка при входе.';
     loading.value = false;
   }
 };
@@ -97,9 +107,30 @@ const handleGoogleLogin = async () => {
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
+.auth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.auth-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .google-btn:hover:not(:disabled) {
   background-color: #f9fafb;
   border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .apple-btn {
@@ -119,8 +150,13 @@ const handleGoogleLogin = async () => {
   margin-right: 12px;
 }
 
+.btn-text {
+  flex: 1;
+  text-align: left;
+}
+
 .turnstile-wrapper {
-  transform: scale(0.85); /* Make widget slightly smaller to fit better */
+  transform: scale(0.85);
   transform-origin: center;
 }
 </style>
