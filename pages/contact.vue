@@ -1,4 +1,6 @@
 <template>
+    <!-- Убрали NavBar, так как он теперь глобальный -->
+    
     <div class="contact-page">
       <!-- Карта -->
       <div class="map-container">
@@ -27,27 +29,32 @@
         <p>Телефон: +7 708 764 8100</p>
         <p>График работы: Пн-Пт с 9:00 до 18:00</p>
       </div>
-  
-      <!-- Кнопка Назад -->
-      <button @click="goBack" class="back-button">← Назад</button>
     </div>
   </template>
   
   <script setup>
-  import { useRouter } from 'vue-router';
-  
-  const router = useRouter();
-  function goBack() {
-    router.back();
-  }
+  // Убрали импорт useRouter, так как кнопка "Назад" удалена
   </script>
   
   <style scoped>
   .contact-page {
     font-family: Helvetica, Arial, sans-serif;
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
-    padding: 20px;
+    padding: 0; /* Убираем padding, так как он компенсируется через page-wrapper */
+    box-sizing: border-box;
+    min-height: calc(100vh - 70px - 50px); /* Высота экрана минус высота шапки и футера в ПК версии */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  /* Для мобильной версии */
+  @media (max-width: 768px) {
+    .contact-page {
+      min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
+    }
   }
   
   /* Контейнер для карты */
@@ -75,22 +82,5 @@
     margin-bottom: 8px;
   }
   
-  /* Стили для кнопки "Назад" */
-  .back-button {
-    display: block;
-    margin: 20px auto;
-    padding: 10px 20px;
-    font-size: 18px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    text-align: center;
-  }
-  
-  .back-button:hover {
-    background-color: #0056b3;
-  }
+  /* Убрали стили для кнопки "Назад" */
   </style>
-  

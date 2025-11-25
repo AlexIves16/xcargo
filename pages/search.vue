@@ -18,24 +18,19 @@
         </ul>
       </div>
       <p v-else-if="searched">Ничего не найдено</p>
-
-      <button @click="goBack" class="back-button">← Назад</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+// Убрали импорт useRouter, так как кнопка "Назад" удалена
 
-const router = useRouter();
 const trackingNumber = ref('');
 const results = ref([]);
 const searched = ref(false);
 
-function goBack() {
-  router.push('/menu');
-}
+// Убрали функцию goBack, так как кнопка "Назад" удалена
 
 async function searchByTrackingNumber() {
   searched.value = false;
@@ -67,7 +62,14 @@ async function searchByTrackingNumber() {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 70px - 50px); /* Высота экрана минус высота шапки и футера в ПК версии */
+}
+
+/* Для мобильной версии */
+@media (max-width: 768px) {
+  .search-page {
+    min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
+  }
 }
 
 .search-content {
@@ -116,7 +118,14 @@ h1 {
   width: 100%;
   margin-top: 20px;
   flex-grow: 1; /* Позволяет секции занимать доступное пространство */
-  overflow-y: auto; /* Добавляет прокрутку при переполнении */
+  overflow-y: hidden; /* Отключаем скролл по умолчанию */
+}
+
+/* Включаем скролл только в мобильной версии */
+@media (max-width: 768px) {
+  .results-section {
+    overflow-y: auto; /* Включаем скролл только в мобильной версии */
+  }
 }
 
 .results-section h2 {
@@ -140,16 +149,5 @@ li {
   border-radius: 5px;
 }
 
-.back-button {
-  width: 100%;
-  max-width: 200px;
-  margin-top: auto; /* Размещает кнопку внизу контейнера */
-  align-self: center;
-  padding: 10px 20px;
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #ffffff);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
+/* Убрали стили для кнопки "Назад" */
 </style>

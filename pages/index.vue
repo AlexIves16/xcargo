@@ -1,6 +1,6 @@
 <template>
   <div class="home flex items-center justify-center w-full overflow-hidden relative">
-    <NavBar />
+    <!-- Убрали NavBar, так как он теперь глобальный -->
 
     <div class="glass-card w-full max-w-md p-8 rounded-2xl flex flex-col items-center gap-6">
       <h1 class="text-xl font-semibold text-gray-800 dark:text-white text-center mb-2">
@@ -79,9 +79,23 @@ const handleGoogleLogin = async () => {
 </script>
 
 <style scoped>
+.home {
+  min-height: calc(100vh - 70px - 50px); /* Высота экрана минус высота шапки и футера в ПК версии */
+}
+
+/* Для мобильной версии */
+@media (max-width: 768px) {
+  .home {
+    min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
+  }
+}
+
 .glass-card {
   background: rgba(255, 255, 255, 0.7);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  margin-top: 0; /* Убираем отступ, так как он компенсируется через page-wrapper */
+  width: 100%;
+  max-width: 400px;
 }
 
 .auth-button {
@@ -96,6 +110,7 @@ const handleGoogleLogin = async () => {
   border: 1px solid #e5e7eb;
   transition: all 0.15s ease;
   cursor: pointer;
+  width: 100%;
 }
 
 .auth-button:disabled {

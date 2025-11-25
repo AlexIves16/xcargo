@@ -14,21 +14,26 @@
     <!-- Условное отображение подложки -->
     <div v-if="showOverlay" class="overlay"></div>
 
+    <!-- Шапка на всех страницах -->
+    <NavBar />
+
     <!-- Контент приложения -->
     <div class="content">
       <div class="page-wrapper" :class="{ 'no-scroll': isHomePage }">
         <NuxtPage />
       </div>
-      
-      <!-- Footer на всех страницах -->
-      <Footer />
     </div>
+    
+    <!-- Footer на всех страницах - теперь зафиксирован снизу -->
+    <Footer class="fixed-footer" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import NavBar from '@/components/NavBar.vue'; // Добавляем импорт NavBar
+import Footer from '@/components/Footer.vue'; // Добавляем импорт Footer
 
 const route = useRoute();
 
@@ -143,25 +148,49 @@ body, html, .app-container {
 .content {
   position: relative;
   z-index: 0;
-  display: flex;
-  flex-direction: column;
   height: 100vh;
   color: var(--tg-theme-text-color, #000);
+  padding-bottom: 50px; /* space for fixed footer */
+  box-sizing: border-box;
+  overflow-y: hidden; /* Отключаем скролл по умолчанию */
+}
+
+/* Включаем скролл только в мобильной версии */
+@media (max-width: 768px) {
+  .content {
+    overflow-y: auto; /* Включаем скролл только в мобильной версии */
+  }
 }
 
 .page-wrapper {
-  position: absolute; /* Абсолютное позиционирование */
-  top: 70px;          /* Отступ сверху (под шапку) */
-  bottom: 90px;       /* Отступ снизу (под футер) */
-  left: 0;
-  right: 0;
+  position: relative;
+  margin-top: 0; /* Убираем отступ, так как NavBar фиксирован */
   display: flex;
-  justify-content: center;
-  align-items: center; /* Центрирование */
-  overflow-y: auto;    /* Скролл только если контент не влезает */
+  justify-content: center; /* horizontal centering */
+  align-items: flex-start; /* align to top */
+  min-height: calc(100vh - 50px); /* Убираем высоту NavBar из расчета */
+  padding-bottom: 20px; /* Add some bottom padding */
+  box-sizing: border-box;
+  padding-top: 50px; /* Точная высота NavBar в мобильной версии */
+}
+
+/* Адаптация для десктопа */
+@media (min-width: 769px) {
+  .page-wrapper {
+    padding-top: 70px; /* Высота NavBar в десктоп версии */
+  }
 }
 
 .page-wrapper.no-scroll {
   overflow: hidden; /* Отключаем скролл на главной */
+}
+
+/* Fixed footer positioning */
+.fixed-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
 }
 </style>
