@@ -54,11 +54,6 @@ const images = [
   '/b6.jpg',
   '/b7.jpg',
   '/b8.jpg',
-  '/b9.jpg',
-  '/b10.jpg',
-  '/b11.jpg',
-  '/b12.jpg',
-  '/b13.jpg',
 ];
 
 const currentIndex = ref(0);
@@ -114,6 +109,73 @@ body, html, .app-container {
   padding: 0;
   color: var(--tg-theme-text-color, #000); /* Устанавливаем черный цвет текста по умолчанию */
 }
+
+/* Анимации и эффекты */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.7);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  width: 20px;
+  height: 20px;
+  animation: rippleAnimation 0.6s linear;
+}
+
+@keyframes rippleAnimation {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(20);
+    opacity: 0;
+  }
+}
+
+/* Плавные переходы - временно отключены для решения проблемы с отображением контента */
+/*
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.3s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
+*/
+
+/* Анимации для кнопок */
+.auth-button,
+.login-button,
+.nav-link,
+.search-button {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-button:hover,
+.login-button:hover,
+.nav-link:hover,
+.search-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Анимации для карточек */
+.glass-card,
+.services-content,
+.contact-page,
+.about-content {
+  opacity: 1;
+  transform: translateY(0);
+}
 </style>
 
 <!-- Стили компонента слайдшоу и подложки -->
@@ -153,6 +215,7 @@ body, html, .app-container {
   padding-bottom: 50px; /* space for fixed footer */
   box-sizing: border-box;
   overflow-y: hidden; /* Отключаем скролл по умолчанию */
+  opacity: 1 !important;
 }
 
 /* Включаем скролл только в мобильной версии */
@@ -172,12 +235,14 @@ body, html, .app-container {
   padding-bottom: 20px; /* Add some bottom padding */
   box-sizing: border-box;
   padding-top: 50px; /* Точная высота NavBar в мобильной версии */
+  opacity: 1 !important;
 }
 
 /* Адаптация для десктопа */
 @media (min-width: 769px) {
   .page-wrapper {
     padding-top: 70px; /* Высота NavBar в десктоп версии */
+    opacity: 1 !important;
   }
 }
 

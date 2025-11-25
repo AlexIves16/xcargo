@@ -81,7 +81,18 @@
 </template>
 
 <script setup>
-// Убрали импорт useRouter и функцию goBack
+// Force content visibility on mount
+onMounted(() => {
+  const aboutPage = document.querySelector('.about-page');
+  if (aboutPage) {
+    aboutPage.setAttribute('style', 'opacity: 1 !important; visibility: visible !important;');
+  }
+  
+  const aboutContent = document.querySelector('.about-content');
+  if (aboutContent) {
+    aboutContent.setAttribute('style', 'opacity: 1 !important; visibility: visible !important;');
+  }
+});
 </script>
 
 <style scoped>
@@ -91,6 +102,7 @@
   align-items: center;
   width: 100%;
   min-height: calc(100vh - 70px - 50px); /* Высота экрана минус высота шапки и футера в ПК версии */
+  opacity: 1 !important;
 }
 
 .about-content {
@@ -110,6 +122,7 @@
 @media (max-width: 768px) {
   .about-page {
     min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
+    opacity: 1 !important;
   }
   
   .about-content {

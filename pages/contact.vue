@@ -34,6 +34,15 @@
   
   <script setup>
   // Убрали импорт useRouter, так как кнопка "Назад" удалена
+  import { onMounted } from 'vue';
+  
+  // Force content visibility on mount
+  onMounted(() => {
+    const contactPage = document.querySelector('.contact-page');
+    if (contactPage) {
+      contactPage.setAttribute('style', 'opacity: 1 !important; visibility: visible !important;');
+    }
+  });
   </script>
   
   <style scoped>
@@ -48,12 +57,14 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    opacity: 1 !important;
   }
   
   /* Для мобильной версии */
   @media (max-width: 768px) {
     .contact-page {
       min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
+      opacity: 1 !important;
     }
   }
   

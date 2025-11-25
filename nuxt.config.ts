@@ -13,7 +13,10 @@ export default defineNuxtConfig({
         { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
       ]
-    }
+    },
+    // Настройка переходов между страницами - временно отключены для решения проблемы с отображением контента
+    // pageTransition: { name: 'page', mode: 'out-in', duration: 300 },
+    // layoutTransition: { name: 'layout', mode: 'out-in', duration: 300 }
   },
 
   nitro: {
@@ -27,9 +30,12 @@ export default defineNuxtConfig({
     }
   },
 
-
-
   modules: ['@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
+
+  // Добавляем плагин анимаций
+  plugins: [
+    '~/plugins/animations.client.ts'
+  ],
 
   pwa: {
     registerType: 'autoUpdate',

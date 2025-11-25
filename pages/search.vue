@@ -23,14 +23,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-// Убрали импорт useRouter, так как кнопка "Назад" удалена
+import { ref, onMounted } from 'vue';
 
 const trackingNumber = ref('');
 const results = ref([]);
 const searched = ref(false);
-
-// Убрали функцию goBack, так как кнопка "Назад" удалена
 
 async function searchByTrackingNumber() {
   searched.value = false;
@@ -55,6 +52,19 @@ async function searchByTrackingNumber() {
     searched.value = true;
   }
 }
+
+// Force content visibility on mount
+onMounted(() => {
+  const searchPage = document.querySelector('.search-page');
+  if (searchPage) {
+    searchPage.setAttribute('style', 'opacity: 1 !important; visibility: visible !important;');
+  }
+  
+  const searchContent = document.querySelector('.search-content');
+  if (searchContent) {
+    searchContent.setAttribute('style', 'opacity: 1 !important; visibility: visible !important;');
+  }
+});
 </script>
 
 <style scoped>
@@ -63,12 +73,14 @@ async function searchByTrackingNumber() {
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 70px - 50px); /* Высота экрана минус высота шапки и футера в ПК версии */
+  opacity: 1 !important;
 }
 
 /* Для мобильной версии */
 @media (max-width: 768px) {
   .search-page {
     min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
+    opacity: 1 !important;
   }
 }
 
@@ -112,6 +124,14 @@ h1 {
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.search-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .results-section {

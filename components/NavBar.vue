@@ -38,11 +38,29 @@
   text-decoration: none;
   font-weight: 500;
   font-size: 0.75rem; /* Уменьшенный шрифт для мобильной версии */
-  transition: color 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  padding: 8px 4px;
 }
 
 .nav-link:hover {
   color: #000;
+  transform: translateY(-2px);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--tg-theme-button-color, #2481cc);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
 }
 
 .login-button {
@@ -50,16 +68,20 @@
   text-decoration: none;
   font-weight: 500;
   font-size: 0.75rem; /* Уменьшенный шрифт для мобильной версии */
-  transition: color 0.2s ease;
+  transition: all 0.3s ease;
   background: var(--tg-theme-button-color, #2481cc);
   color: var(--tg-theme-button-text-color, #ffffff);
   padding: 4px 10px; /* Уменьшенные отступы */
   border-radius: 6px; /* Меньший радиус скругления */
+  position: relative;
+  overflow: hidden;
 }
 
 .login-button:hover {
   color: #fff;
   background: #1a5e99;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Адаптация для десктопа */
@@ -72,6 +94,7 @@
   
   .nav-link {
     font-size: 1.1rem;
+    padding: 8px;
   }
   
   .login-button {

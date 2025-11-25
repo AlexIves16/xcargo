@@ -81,12 +81,14 @@ const handleGoogleLogin = async () => {
 <style scoped>
 .home {
   min-height: calc(100vh - 70px - 50px); /* Высота экрана минус высота шапки и футера в ПК версии */
+  opacity: 1 !important;
 }
 
 /* Для мобильной версии */
 @media (max-width: 768px) {
   .home {
     min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
+    opacity: 1 !important;
   }
 }
 
@@ -108,9 +110,11 @@ const handleGoogleLogin = async () => {
   font-weight: 500;
   background: white;
   border: 1px solid #e5e7eb;
-  transition: all 0.15s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   width: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .auth-button:disabled {
@@ -121,7 +125,7 @@ const handleGoogleLogin = async () => {
 .google-btn:hover:not(:disabled) {
   background-color: #f9fafb;
   border-color: #d1d5db;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
@@ -133,6 +137,8 @@ const handleGoogleLogin = async () => {
 
 .apple-btn:hover:not(:disabled) {
   background-color: #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .icon-wrapper {
