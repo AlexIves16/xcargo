@@ -11,7 +11,6 @@ export default defineNuxtPlugin(() => {
 
         // 2. Listen for install prompt
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
             console.log('🔥 PWA Install Prompt fired! App IS installable.');
             // Make it available globally for testing in console
             (window as any).deferredPrompt = e;

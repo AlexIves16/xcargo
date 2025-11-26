@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import InstallPwa from '~/components/InstallPwa.vue';
 
 const { $auth } = useNuxtApp();
@@ -52,6 +52,30 @@ const router = useRouter();
 
 const loading = ref(false);
 const error = ref('');
+
+// Проверяем, авторизован ли пользователь при загрузке страницы
+onMounted(() => {
+  if ($auth) {
+    const unsubscribe = onAuthStateChanged($auth, (user) => {
+      if (user) {
+        // Пользователь уже авторизован, перенаправляем на дашборд
+        console.log('User already authenticated, redirecting to dashboard');
+        const isAdmin = user.email === 'kairfakomylife@gmail.com';
+        router.push(isAdmin ? '/admin' : '/dashboard');
+      }
+    });
+    
+    // Дополнительная проверка текущего пользователя
+    if ($auth.currentUser) {
+      console.log('User already authenticated on mount, redirecting to dashboard');
+      const isAdmin = $auth.currentUser.email === 'kairfakomylife@gmail.com';
+      router.push(isAdmin ? '/admin' : '/dashboard');
+    }
+    
+    // Очищаем слушатель при размонтировании
+    onUnmounted(() => unsubscribe());
+  }
+});
 
 const handleGoogleLogin = async () => {
   loading.value = true;
@@ -64,11 +88,14 @@ const handleGoogleLogin = async () => {
     const ADMIN_EMAIL = 'kairfakomylife@gmail.com';
     const userEmail = result.user.email;
     
-    if (userEmail === ADMIN_EMAIL) {
-      await router.push('/admin');
-    } else {
-      await router.push('/dashboard');
-    }
+    // Добавляем небольшую задержку для уверенности в перенаправлении
+    setTimeout(() => {
+      if (userEmail === ADMIN_EMAIL) {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    }, 300);
   } catch (e: any) {
     console.error('Login error:', e);
     if (e.code === 'auth/popup-closed-by-user') {

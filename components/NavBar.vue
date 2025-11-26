@@ -7,14 +7,17 @@
         <NuxtLink to="/contact" class="nav-link text-xs md:text-base whitespace-nowrap">Контакты</NuxtLink>
         <NuxtLink to="/search" class="nav-link text-xs md:text-base whitespace-nowrap">Отслеживание</NuxtLink>
       </div>
-      <NuxtLink v-if="!isHomePage && !isAuthenticated" to="/" class="login-button text-xs md:text-base whitespace-nowrap">Войти</NuxtLink>
+      <div class="nav-actions flex items-center gap-2">
+        <NuxtLink v-if="isAuthenticated" to="/dashboard" class="login-button text-xs md:text-base whitespace-nowrap">Кабинет</NuxtLink>
+        <NuxtLink v-else-if="!props.isHomePage" to="/" class="login-button text-xs md:text-base whitespace-nowrap">Войти</NuxtLink>
+      </div>
     </div>
   </nav>
 </template>
 
 <script setup>
 import { useNuxtApp } from '#app';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, onUnmounted } from 'vue';
 
 const props = defineProps({
   isHomePage: {
@@ -24,19 +27,49 @@ const props = defineProps({
 });
 
 const isAuthenticated = ref(false);
+let unsubscribe = null;
 
 onMounted(async () => {
   try {
     const { $auth } = useNuxtApp();
     if ($auth) {
+      // Проверяем текущее состояние аутентификации
       isAuthenticated.value = !!$auth.currentUser;
-      // Also listen for auth state changes
-      $auth.onAuthStateChanged(user => {
+      console.log('Initial auth state:', $auth.currentUser ? 'authenticated' : 'not authenticated');
+      
+      // Слушаем изменения состояния аутентификации
+      unsubscribe = $auth.onAuthStateChanged(user => {
         isAuthenticated.value = !!user;
+        console.log('Auth state changed:', user ? 'authenticated' : 'not authenticated');
+        
+        // Если пользователь вышел из системы и мы находимся не на главной странице,
+        // возможно стоит перенаправить его на главную
+        if (!user && !props.isHomePage) {
+          console.log('User logged out, consider redirecting to home page');
+        }
       });
+      
+      // Дополнительная проверка через небольшую задержку
+      setTimeout(() => {
+        isAuthenticated.value = !!$auth.currentUser;
+        console.log('Delayed auth check:', $auth.currentUser ? 'authenticated' : 'not authenticated');
+      }, 500);
+      
+      // Ещё одна проверка через большую задержку для надежности
+      setTimeout(() => {
+        isAuthenticated.value = !!$auth.currentUser;
+        console.log('Second delayed auth check:', $auth.currentUser ? 'authenticated' : 'not authenticated');
+      }, 1500);
     }
   } catch (error) {
     console.log('Error checking auth state:', error);
+  }
+});
+
+// Очищаем слушатель при размонтировании компонента
+onUnmounted(() => {
+  if (unsubscribe) {
+    unsubscribe();
   }
 });
 </script>
@@ -63,13 +96,14 @@ onMounted(async () => {
 }
 
 .nav-link {
-  color: var(--tg-theme-button-color, #2481cc); /* Голубой цвет для лучшей читаемости */
+  color: #2481cc; /* Фиксированный голубой цвет для лучшей читаемости */
   text-decoration: none;
   font-weight: 500;
   font-size: 0.75rem; /* Уменьшенный шрифт для мобильной версии */
   transition: all 0.3s ease;
   position: relative;
   padding: 8px 4px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Легкая тень для лучшей читаемости на фоне изображений */
 }
 
 .nav-link:hover {
@@ -93,16 +127,17 @@ onMounted(async () => {
 }
 
 .login-button {
-  color: var(--tg-theme-button-text-color, #ffffff); /* Белый цвет текста для контраста */
+  color: #ffffff; /* Фиксированный белый цвет текста для контраста */
   text-decoration: none;
   font-weight: 500;
   font-size: 0.75rem; /* Уменьшенный шрифт для мобильной версии */
   transition: all 0.3s ease;
-  background: var(--tg-theme-button-color, #2481cc);
+  background: #2481cc; /* Фиксированный голубой цвет фона */
   padding: 4px 10px; /* Уменьшенные отступы */
   border-radius: 6px; /* Меньший радиус скругления */
   position: relative;
   overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* Легкая тень для лучшей читаемости на фоне изображений */
 }
 
 .login-button:hover {
@@ -132,10 +167,5 @@ onMounted(async () => {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .nav-link { color: #e5e5e5; }
-  .nav-link:hover { color: #fff; }
-  .login-button { color: var(--tg-theme-button-text-color, #ffffff); }
-  .login-button:hover { color: #fff; }
-}
+/* Удалены стили для темной темы - используем фиксированные цвета */
 </style>

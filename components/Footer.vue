@@ -74,11 +74,12 @@ const currentYear = new Date().getFullYear();
 }
 
 .footer-link {
-  color: #4a4a4a;
+  color: #2481cc; /* Фиксированный голубой цвет для лучшей читаемости */
   text-decoration: none;
   font-size: 0.65rem;
   transition: color 0.2s ease;
   display: inline-block;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3); /* Легкая тень для лучшей читаемости на фоне изображений */
 }
 
 .footer-link:hover {
@@ -87,8 +88,9 @@ const currentYear = new Date().getFullYear();
 
 .footer-text {
   font-size: 0.65rem;
-  color: #4a4a4a;
+  color: #2481cc; /* Фиксированный голубой цвет для лучшей читаемости */
   margin: 0;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3); /* Легкая тень для лучшей читаемости на фоне изображений */
 }
 
 .footer-bottom {
@@ -99,8 +101,9 @@ const currentYear = new Date().getFullYear();
 
 .copyright {
   font-size: 0.6rem;
-  color: #666;
+  color: #2481cc; /* Фиксированный голубой цвет для лучшей читаемости */
   margin: 0;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3); /* Легкая тень для лучшей читаемости на фоне изображений */
 }
 
 /* Адаптивность для мобильных устройств */
@@ -126,28 +129,5 @@ const currentYear = new Date().getFullYear();
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .glass-footer {
-    background: rgba(0, 0, 0, 0.3);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .footer-heading {
-    color: #e5e5e5;
-  }
-
-  .footer-text,
-  .footer-link {
-    color: #b0b0b0;
-  }
-
-  .footer-link:hover {
-    color: #fff;
-  }
-
-  .copyright {
-    color: #999;
-  }
-}
+/* Удалены стили для темной темы - используем фиксированные цвета */
 </style>

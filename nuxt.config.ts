@@ -119,6 +119,13 @@ export default defineNuxtConfig({
             }
           }
         }
+      ],
+      // Исправляем ошибку с precache
+      navigateFallbackAllowlist: [new RegExp('^/$')],
+      navigateFallbackDenylist: [/^\/api/,
+        // Добавляем другие исключения
+        /^\/admin/,
+        /^\/dashboard/
       ]
     },
     devOptions: {
