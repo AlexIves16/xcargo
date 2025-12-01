@@ -28,3 +28,8 @@ ea
 .env
 .env.*
 !.env.example
+
+# Data Tables
+*.csv
+*.xlsx
+*.xls

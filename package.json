@@ -19,7 +19,8 @@
     "node-telegram-bot-api": "^0.64.0",
     "nuxt": "^3.14.0",
     "vue": "latest",
-    "vue-router": "latest"
+    "vue-router": "latest",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.0",

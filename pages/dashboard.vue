@@ -15,20 +15,30 @@
       <!-- Add Track Number Form -->
       <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
         <h2 class="text-lg font-semibold mb-4">Добавить трек-номер</h2>
-        <div class="flex gap-4">
-          <input 
-            id="track-number"
-            name="track-number"
-            v-model="newTrackNumber" 
-            type="text" 
-            placeholder="Введите трек-номер" 
-            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            @keyup.enter="addTrackNumber"
-          />
+        <div class="flex flex-col sm:flex-row gap-4">
+          <div class="flex-1 flex flex-col gap-2">
+            <input 
+              id="track-number"
+              name="track-number"
+              v-model="newTrackNumber" 
+              type="text" 
+              placeholder="Введите трек-номер *" 
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+            <input 
+              id="track-description"
+              name="track-description"
+              v-model="newTrackDescription" 
+              type="text" 
+              placeholder="Описание (например: плюшевый медведь) - необязательно" 
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+              @keyup.enter="addTrackNumber"
+            />
+          </div>
           <button 
             @click="addTrackNumber" 
             :disabled="!newTrackNumber || loading"
-            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 h-fit sm:self-start"
           >
             {{ loading ? 'Добавление...' : 'Добавить' }}
           </button>
@@ -51,7 +61,12 @@
         <div v-else class="space-y-4">
           <div v-for="track in tracks" :key="track.id" class="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
             <div>
-              <div class="font-medium text-gray-800">{{ track.number }}</div>
+              <div class="font-medium text-gray-800 flex items-center gap-2">
+                {{ track.number }}
+                <span v-if="track.description" class="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                  {{ track.description }}
+                </span>
+              </div>
               <div class="text-sm text-gray-500">Добавлено: {{ formatDate(track.createdAt) }}</div>
             </div>
             <div class="flex items-center gap-3">
@@ -83,6 +98,7 @@ const { $db, $auth } = useNuxtApp();
 const router = useRouter();
 
 const newTrackNumber = ref('');
+const newTrackDescription = ref('');
 const tracks = ref([]);
 const loading = ref(false);
 const loadingData = ref(true);
@@ -128,13 +144,15 @@ const addTrackNumber = async () => {
   try {
     await addDoc(collection($db, 'tracks'), {
       number: newTrackNumber.value.trim(),
+      description: newTrackDescription.value.trim(),
       userId: $auth.currentUser.uid,
       userEmail: $auth.currentUser.email,
       userName: $auth.currentUser.displayName || 'Пользователь',
       createdAt: serverTimestamp(),
-      status: 'pending' // pending, in_transit, delivered
+      status: 'pending' // pending, in_transit, arrived, delivered, lost
     });
     newTrackNumber.value = '';
+    newTrackDescription.value = '';
   } catch (e) {
     console.error("Error adding track:", e);
     error.value = 'Не удалось добавить трек-номер. Проверьте права доступа.';
@@ -167,7 +185,9 @@ const getStatusLabel = (status) => {
   const labels = {
     pending: 'Ожидает',
     in_transit: 'В пути',
-    delivered: 'Доставлено'
+    arrived: 'На складе',
+    delivered: 'Доставлено',
+    lost: 'Утерян'
   };
   return labels[status] || status;
 };
@@ -176,7 +196,9 @@ const getStatusClass = (status) => {
   const classes = {
     pending: 'bg-yellow-100 text-yellow-800',
     in_transit: 'bg-blue-100 text-blue-800',
-    delivered: 'bg-green-100 text-green-800'
+    arrived: 'bg-purple-100 text-purple-800',
+    delivered: 'bg-green-100 text-green-800',
+    lost: 'bg-red-100 text-red-800'
   };
   return classes[status] || 'bg-gray-100 text-gray-800';
 };
