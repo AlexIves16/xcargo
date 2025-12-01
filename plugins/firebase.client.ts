@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 export default defineNuxtPlugin((nuxtApp) => {
@@ -21,6 +21,32 @@ export default defineNuxtPlugin((nuxtApp) => {
   const analytics = getAnalytics(app);
   const auth = getAuth(app);
   const db = getFirestore(app);
+
+  // Session Management Logic
+  if (process.client) {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Check if running in PWA (Standalone) mode
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+
+        if (!isPWA) {
+          // Browser mode: Check if session is older than 24 hours
+          const lastSignInTime = user.metadata.lastSignInTime;
+          if (lastSignInTime) {
+            const loginTime = new Date(lastSignInTime).getTime();
+            const now = Date.now();
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+
+            if (now - loginTime > twentyFourHours) {
+              console.log("Session expired (Browser mode > 24h). Logging out.");
+              await signOut(auth);
+              window.location.href = '/login';
+            }
+          }
+        }
+      }
+    });
+  }
 
   return {
     provide: {
