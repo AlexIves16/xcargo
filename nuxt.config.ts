@@ -12,6 +12,9 @@ export default defineNuxtConfig({
       link: [
         { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ],
+      script: [
+        { src: 'https://telegram.org/js/telegram-web-app.js', defer: true }
       ]
     },
     // Настройка переходов между страницами - временно отключены для решения проблемы с отображением контента
@@ -25,7 +28,7 @@ export default defineNuxtConfig({
   routeRules: {
     '/**': {
       headers: {
-        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.googletagmanager.com https://firebase.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://www.svgrepo.com; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com https://firebaseinstallations.googleapis.com; font-src 'self' data:; frame-src 'self' https://xcargo-4853b.firebaseapp.com https://www.googletagmanager.com https://yandex.kz https://accounts.google.com; frame-ancestors 'self';",
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.googletagmanager.com https://firebase.googleapis.com https://telegram.org https://telegram.org/js; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://www.svgrepo.com; connect-src 'self' https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com https://firebaseinstallations.googleapis.com; font-src 'self' data:; frame-src 'self' https://xcargo-4853b.firebaseapp.com https://www.googletagmanager.com https://yandex.kz https://accounts.google.com https://oauth.telegram.org; frame-ancestors 'self';"
       }
     }
   },
@@ -138,6 +141,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     googleClientEmail: process.env.GOOGLE_CLIENT_EMAIL || '',
     googlePrivateKey: (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
     spreadsheetId: process.env.SPREADSHEET_ID || '',
     baseURL: process.env.BASE_URL || '/',
 
@@ -149,6 +153,7 @@ export default defineNuxtConfig({
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
       firebaseAppId: process.env.FIREBASE_APP_ID || '',
       firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID || '',
+      telegramBotName: process.env.TELEGRAM_BOT_NAME || '',
     }
   },
 

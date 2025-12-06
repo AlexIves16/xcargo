@@ -12,6 +12,17 @@
         <span>{{ loading ? 'Вход...' : 'Войти через Google' }}</span>
       </button>
 
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 bg-white text-gray-500">Или через Telegram</span>
+        </div>
+      </div>
+
+      <TelegramLogin @callback="handleTelegramLogin" />
+
       <p v-if="error" class="mt-4 text-sm text-red-600 text-center">
         {{ error }}
       </p>
@@ -20,24 +31,49 @@
 </template>
 
 <script setup lang="ts">
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithCustomToken } from 'firebase/auth';
 
 const { $auth } = useNuxtApp();
 const router = useRouter();
 const loading = ref(false);
 const error = ref('');
 
-// Проверяем результат редиректа при загрузке страницы
 onMounted(async () => {
+  // 1. Check Redirect Result (Browser flow - Google)
   try {
     const result = await getRedirectResult($auth);
     if (result?.user) {
-      // Пользователь успешно вошёл после редиректа
       router.push('/dashboard');
+      return;
     }
   } catch (e: any) {
     console.error('Redirect result error:', e);
-    error.value = 'Ошибка при входе. Попробуйте снова.';
+    // Don't show error here, as it might be just no redirect result
+  }
+
+  // 2. Check Telegram WebApp (TMA flow)
+  const tg = (window as any).Telegram?.WebApp;
+  if (tg && tg.initData) {
+    console.log('Telegram WebApp detected');
+    loading.value = true;
+    
+    try {
+      tg.expand();
+      
+      const response = await $fetch<{ token: string }>('/api/auth/telegram', {
+        method: 'POST',
+        body: {
+          initData: tg.initData
+        }
+      });
+      
+      await signInWithCustomToken($auth, response.token);
+      router.push('/dashboard');
+    } catch (e) {
+      console.error('TMA Login error:', e);
+      error.value = 'Ошибка автоматического входа через Telegram';
+      loading.value = false;
+    }
   }
 });
 
@@ -47,13 +83,29 @@ const signInWithGoogle = async () => {
   
   try {
     const provider = new GoogleAuthProvider();
-    // Используем редирект вместо popup - это полностью убирает COOP warnings
     await signInWithRedirect($auth, provider);
-    // После этого произойдёт редирект на Google, а потом обратно
-    // onMounted обработает результат
   } catch (e: any) {
     console.error('Login error:', e);
     error.value = 'Ошибка при входе. Проверьте консоль Firebase.';
+    loading.value = false;
+  }
+};
+
+const handleTelegramLogin = async (user: any) => {
+  loading.value = true;
+  error.value = '';
+
+  try {
+    const response = await $fetch<{ token: string }>('/api/auth/telegram', {
+      method: 'POST',
+      body: user
+    });
+    
+    await signInWithCustomToken($auth, response.token);
+    router.push('/dashboard');
+  } catch (e: any) {
+    console.error('Telegram login error:', e);
+    error.value = 'Ошибка входа через Telegram. Попробуйте снова.';
     loading.value = false;
   }
 };
