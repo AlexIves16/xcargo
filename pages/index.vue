@@ -107,13 +107,15 @@ onMounted(() => {
 <style scoped>
 .home {
   min-height: 100vh;
+  padding-top: 70px; /* Space for fixed header */
+  padding-bottom: 50px; /* Space for fixed footer */
 }
 
 /* Hero Section */
 .hero-section {
   position: relative;
-  height: 50vh;
-  min-height: 300px;
+  height: 60vh;
+  min-height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;

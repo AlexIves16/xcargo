@@ -182,8 +182,8 @@ body, html, .app-container {
 <style scoped>
 .app-container {
   position: relative;
-  height: 100vh;
-  overflow: hidden; /* Отключаем скролл */
+  min-height: 100vh;
+  overflow-y: auto; /* Enable scroll */
 }
 
 .background-image {
@@ -210,11 +210,11 @@ body, html, .app-container {
 .content {
   position: relative;
   z-index: 0;
-  height: 100vh;
+  min-height: 100vh;
   color: var(--tg-theme-text-color, #000);
   padding-bottom: 50px; /* space for fixed footer */
   box-sizing: border-box;
-  overflow-y: hidden; /* Отключаем скролл по умолчанию */
+  overflow-y: visible; /* Allow scroll */
   opacity: 1 !important;
 }
 
@@ -247,7 +247,7 @@ body, html, .app-container {
 }
 
 .page-wrapper.no-scroll {
-  overflow: hidden; /* Отключаем скролл на главной */
+  overflow: visible; /* Allow scroll on homepage */
 }
 
 /* Fixed footer positioning */
