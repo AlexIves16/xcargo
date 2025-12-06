@@ -88,12 +88,17 @@ export default defineEventHandler(async (event) => {
     // Initialize Firebase Admin
     let app;
     const apps = getApps();
+
+    // Fix private key format - replace literal \n with actual newlines
+    const privateKey = (config.googlePrivateKey as string).replace(/\\n/g, '\n');
+    console.log('🔍 SERVER DEBUG: privateKey first 50 chars:', privateKey.substring(0, 50));
+
     if (apps.length === 0) {
         app = initializeApp({
             credential: cert({
-                projectId: config.public.firebaseProjectId,
-                clientEmail: config.googleClientEmail,
-                privateKey: config.googlePrivateKey,
+                projectId: config.public.firebaseProjectId as string,
+                clientEmail: config.googleClientEmail as string,
+                privateKey: privateKey,
             }),
         });
     } else {
