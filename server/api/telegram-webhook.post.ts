@@ -9,51 +9,17 @@ export default defineEventHandler(async (event) => {
 
     console.log('📩 Telegram webhook received:', JSON.stringify(body).substring(0, 200));
 
-    if (!body || !body.message) {
-        return { ok: true }; // Telegram expects 200 OK
-    }
-
-    const message = body.message;
-    const text = message.text || '';
-    const user = message.from;
-
-    // Handle /start command with auth token
-    if (text.startsWith('/start auth_')) {
-        const token = text.replace('/start auth_', '').trim();
-        console.log('🔐 Processing auth token:', token);
-
-        const tokenData = pendingTokens.get(token);
-
-        if (!tokenData) {
-            // Token expired or invalid
-            await sendTelegramMessage(
-                config.telegramBotToken as string,
-                message.chat.id,
-                '❌ Ссылка для входа устарела. Пожалуйста, попробуйте снова на сайте.'
-            );
-            return { ok: true };
-        }
-
-        // Send confirmation button
-        await sendTelegramMessage(
-            config.telegramBotToken as string,
-            message.chat.id,
-            `👋 Привет, ${user.first_name}!\n\nПодтвердите вход на сайт Xpress Cargo:`,
-            {
-                inline_keyboard: [[
-                    { text: '✅ Подтвердить вход', callback_data: `confirm_auth_${token}` }
-                ]]
-            }
-        );
-
+    if (!body) {
         return { ok: true };
     }
 
-    // Handle callback query (button press)
+    // Handle callback query (button press) FIRST - before message check!
     if (body.callback_query) {
         const callbackData = body.callback_query.data || '';
         const callbackUser = body.callback_query.from;
         const chatId = body.callback_query.message?.chat?.id;
+
+        console.log('🔘 Callback query received:', callbackData);
 
         if (callbackData.startsWith('confirm_auth_')) {
             const token = callbackData.replace('confirm_auth_', '');
@@ -62,6 +28,7 @@ export default defineEventHandler(async (event) => {
             const tokenData = pendingTokens.get(token);
 
             if (!tokenData) {
+                console.log('❌ Token not found or expired');
                 await answerCallbackQuery(
                     config.telegramBotToken as string,
                     body.callback_query.id,
@@ -152,6 +119,46 @@ export default defineEventHandler(async (event) => {
                 );
             }
         }
+
+        return { ok: true };
+    }
+
+    // Handle regular messages
+    if (!body.message) {
+        return { ok: true };
+    }
+
+    const message = body.message;
+    const text = message.text || '';
+    const user = message.from;
+
+    // Handle /start command with auth token
+    if (text.startsWith('/start auth_')) {
+        const token = text.replace('/start auth_', '').trim();
+        console.log('🔐 Processing auth token:', token);
+
+        const tokenData = pendingTokens.get(token);
+
+        if (!tokenData) {
+            await sendTelegramMessage(
+                config.telegramBotToken as string,
+                message.chat.id,
+                '❌ Ссылка для входа устарела. Пожалуйста, попробуйте снова на сайте.'
+            );
+            return { ok: true };
+        }
+
+        // Send confirmation button
+        await sendTelegramMessage(
+            config.telegramBotToken as string,
+            message.chat.id,
+            `👋 Привет, ${user.first_name}!\n\nПодтвердите вход на сайт Xpress Cargo:`,
+            {
+                inline_keyboard: [[
+                    { text: '✅ Подтвердить вход', callback_data: `confirm_auth_${token}` }
+                ]]
+            }
+        );
 
         return { ok: true };
     }
