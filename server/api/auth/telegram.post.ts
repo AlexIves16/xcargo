@@ -7,12 +7,20 @@ export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig();
     const body = await readBody(event);
 
+    // DEBUG: Log config to see what's available
+    console.log('🔍 SERVER DEBUG: runtimeConfig keys:', Object.keys(config));
+    console.log('🔍 SERVER DEBUG: telegramBotToken exists:', !!config.telegramBotToken);
+    console.log('🔍 SERVER DEBUG: googleClientEmail:', config.googleClientEmail);
+    console.log('🔍 SERVER DEBUG: googlePrivateKey exists:', !!config.googlePrivateKey);
+    console.log('🔍 SERVER DEBUG: googlePrivateKey length:', config.googlePrivateKey?.length || 0);
+
     if (!body) {
         throw createError({ statusCode: 400, statusMessage: 'Invalid request body' });
     }
 
     const token = config.telegramBotToken;
     if (!token) {
+        console.error('❌ SERVER ERROR: TELEGRAM_BOT_TOKEN is empty!');
         throw createError({ statusCode: 500, statusMessage: 'Telegram Bot Token not configured' });
     }
 
