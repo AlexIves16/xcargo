@@ -15,13 +15,21 @@ const props = defineProps<{
 const emit = defineEmits(['callback']);
 const telegramContainer = ref<HTMLElement | null>(null);
 const config = useRuntimeConfig();
+
+// DEBUG: Log entire public config to see what's available
+console.log('🔍 DEBUG: Full public runtimeConfig:', JSON.stringify(config.public, null, 2));
+console.log('🔍 DEBUG: telegramBotName from config:', config.public.telegramBotName);
+console.log('🔍 DEBUG: props.botName:', props.botName);
+
 const botName = props.botName || (config.public.telegramBotName as string);
+console.log('🔍 DEBUG: Final botName:', botName);
 
 onMounted(() => {
   if (!botName) {
-    console.error('Telegram Bot Name is missing!');
+    console.error('Telegram Bot Name is missing! Check that TELEGRAM_BOT_NAME env var is set.');
     return;
   }
+  console.log('✅ DEBUG: Telegram widget loading with bot:', botName);
 
   // Create global callback function
   (window as any).onTelegramAuth = (user: any) => {
