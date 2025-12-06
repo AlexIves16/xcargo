@@ -112,8 +112,8 @@ onMounted(() => {
 /* Hero Section */
 .hero-section {
   position: relative;
-  height: 70vh;
-  min-height: 500px;
+  height: 50vh;
+  min-height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,16 +180,16 @@ onMounted(() => {
 
 /* Section Titles */
 .section-title {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
   color: #1f2937;
 }
 
 /* Services Section */
 .services-section {
-  padding: 5rem 0;
+  padding: 3rem 0;
   background: #f9fafb;
 }
 
@@ -201,7 +201,7 @@ onMounted(() => {
 
 .service-card {
   background: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 1rem;
   text-align: center;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -232,16 +232,16 @@ onMounted(() => {
 
 /* About Section */
 .about-section {
-  padding: 5rem 0;
+  padding: 3rem 0;
   background: white;
 }
 
 .about-text {
   max-width: 800px;
-  margin: 0 auto 3rem;
+  margin: 0 auto 2rem;
   text-align: center;
-  font-size: 1.1rem;
-  line-height: 1.8;
+  font-size: 1rem;
+  line-height: 1.6;
   color: #4b5563;
 }
 
@@ -270,20 +270,20 @@ onMounted(() => {
 
 /* CTA Section */
 .cta-section {
-  padding: 5rem 0;
+  padding: 2rem 0;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
   color: white;
   text-align: center;
 }
 
 .cta-section h2 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .cta-section p {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   opacity: 0.9;
 }
 

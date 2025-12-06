@@ -60,18 +60,44 @@ export default defineEventHandler(async (event) => {
                 const auth = getAuth(app);
                 const uid = `tg_${callbackUser.id}`;
 
+                // Get user profile photo from Telegram
+                let photoURL: string | undefined;
+                try {
+                    const photosResponse = await fetch(
+                        `https://api.telegram.org/bot${config.telegramBotToken}/getUserProfilePhotos?user_id=${callbackUser.id}&limit=1`
+                    );
+                    const photosData = await photosResponse.json();
+
+                    if (photosData.ok && photosData.result.total_count > 0) {
+                        const fileId = photosData.result.photos[0][0].file_id;
+
+                        // Get file path
+                        const fileResponse = await fetch(
+                            `https://api.telegram.org/bot${config.telegramBotToken}/getFile?file_id=${fileId}`
+                        );
+                        const fileData = await fileResponse.json();
+
+                        if (fileData.ok) {
+                            photoURL = `https://api.telegram.org/file/bot${config.telegramBotToken}/${fileData.result.file_path}`;
+                            console.log('📷 Got user photo:', photoURL);
+                        }
+                    }
+                } catch (e) {
+                    console.log('Could not fetch user photo:', e);
+                }
+
                 // Create or update user
                 try {
                     await auth.updateUser(uid, {
                         displayName: `${callbackUser.first_name} ${callbackUser.last_name || ''}`.trim(),
-                        photoURL: callbackUser.photo_url || undefined,
+                        photoURL: photoURL,
                     });
                 } catch (error: any) {
                     if (error.code === 'auth/user-not-found') {
                         await auth.createUser({
                             uid: uid,
                             displayName: `${callbackUser.first_name} ${callbackUser.last_name || ''}`.trim(),
-                            photoURL: callbackUser.photo_url || undefined,
+                            photoURL: photoURL,
                         });
                     } else {
                         throw error;
