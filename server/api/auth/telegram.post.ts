@@ -89,9 +89,17 @@ export default defineEventHandler(async (event) => {
     let app;
     const apps = getApps();
 
-    // Fix private key format - replace literal \n with actual newlines
-    const privateKey = (config.googlePrivateKey as string).replace(/\\n/g, '\n');
-    console.log('🔍 SERVER DEBUG: privateKey first 50 chars:', privateKey.substring(0, 50));
+    // Fix private key format - handle various escape scenarios
+    let privateKey = config.googlePrivateKey as string;
+    console.log('🔍 SERVER DEBUG: raw privateKey length:', privateKey.length);
+    console.log('🔍 SERVER DEBUG: raw privateKey first 60 chars:', JSON.stringify(privateKey.substring(0, 60)));
+
+    // Try multiple replacement patterns
+    privateKey = privateKey.replace(/\\n/g, '\n');   // literal \n
+    privateKey = privateKey.replace(/\\\\n/g, '\n'); // double-escaped \\n
+    privateKey = privateKey.replace(/ /g, '\n');     // spaces to newlines (Cloud Run issue)
+
+    console.log('🔍 SERVER DEBUG: processed privateKey first 60 chars:', JSON.stringify(privateKey.substring(0, 60)));
 
     if (apps.length === 0) {
         app = initializeApp({
