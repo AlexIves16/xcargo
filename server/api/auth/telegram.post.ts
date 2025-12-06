@@ -96,8 +96,6 @@ export default defineEventHandler(async (event) => {
 
     // Try multiple replacement patterns
     privateKey = privateKey.replace(/\\n/g, '\n');   // literal \n
-    privateKey = privateKey.replace(/\\\\n/g, '\n'); // double-escaped \\n
-    privateKey = privateKey.replace(/ /g, '\n');     // spaces to newlines (Cloud Run issue)
 
     console.log('🔍 SERVER DEBUG: processed privateKey first 60 chars:', JSON.stringify(privateKey.substring(0, 60)));
 
