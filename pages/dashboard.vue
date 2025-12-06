@@ -3,7 +3,18 @@
     <NavBar />
     <div class="max-w-4xl mx-auto p-6 pt-24 h-full overflow-y-auto pb-32">
       <div class="flex justify-between items-center mb-8">
-        <h1 class="text-2xl font-bold text-gray-800">Личный кабинет</h1>
+        <div class="flex items-center gap-4">
+          <!-- User Avatar -->
+          <img 
+            :src="userPhoto || '/logo.png'" 
+            :alt="userName"
+            class="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+          />
+          <div>
+            <p class="text-sm text-gray-500">Добро пожаловать,</p>
+            <h1 class="text-xl font-bold text-gray-800">{{ userName }}</h1>
+          </div>
+        </div>
         <div class="flex gap-4 items-center">
           <NuxtLink v-if="isAdmin" to="/admin" class="text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
             Админ-панель
@@ -108,6 +119,17 @@ const isAdmin = computed(() => {
   const currentUser = $auth?.currentUser;
   if (!currentUser) return false;
   return currentUser.email === 'kairfakomylife@gmail.com';
+});
+
+const userName = computed(() => {
+  const currentUser = $auth?.currentUser;
+  if (!currentUser) return 'Пользователь';
+  return currentUser.displayName || currentUser.email?.split('@')[0] || 'Пользователь';
+});
+
+const userPhoto = computed(() => {
+  const currentUser = $auth?.currentUser;
+  return currentUser?.photoURL || null;
 });
 
 // Load tracks

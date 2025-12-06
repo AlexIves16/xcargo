@@ -1,186 +1,325 @@
 <template>
-  <div class="home flex items-center justify-center w-full overflow-hidden relative">
-    <!-- Убрали NavBar, так как он теперь глобальный -->
-
-    <div class="glass-card w-full max-w-md p-8 rounded-2xl flex flex-col items-center gap-6">
-      <h1 class="text-xl font-semibold text-gray-800 dark:text-white text-center mb-2">
-        Вход в систему
-      </h1>
-
-      <div class="w-full flex flex-col gap-3">
-        <button 
-          @click="handleGoogleLogin" 
-          :disabled="loading"
-          class="auth-button google-btn"
-        >
-          <div class="icon-wrapper">
-            <img src="/icons/google.svg" alt="Google" class="w-5 h-5" />
-          </div>
-          <span class="btn-text">{{ loading ? 'Вход...' : 'Войти через Google' }}</span>
-        </button>
-
-        <button 
-          disabled
-          class="auth-button apple-btn"
-        >
-          <div class="icon-wrapper">
-            <div class="w-5 h-5 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-              </svg>
-            </div>
-          </div>
-          <span class="btn-text">Войти через Apple</span>
-        </button>
+  <div class="home">
+    <!-- Hero Section with Banner -->
+    <section class="hero-section">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">Xpress Cargo</h1>
+        <p class="hero-subtitle">Быстрая и надёжная доставка грузов из Китая в Казахстан</p>
+        <p class="hero-description">Консолидация, хранение на складе и доставка до двери по всему Казахстану</p>
       </div>
+    </section>
 
-      <p v-if="error" class="text-red-500 text-xs text-center mt-1">{{ error }}</p>
-      <p class="text-xs text-gray-500 text-center mt-2">Защищено Google reCAPTCHA</p>
-      
-      <!-- Кнопка установки PWA только на главной странице и только если приложение не установлено -->
-      <InstallPwa />
-    </div>
+    <!-- Services Section -->
+    <section class="services-section">
+      <div class="container">
+        <h2 class="section-title">Наши услуги</h2>
+        <div class="services-grid">
+          <div class="service-card">
+            <div class="service-icon">📦</div>
+            <h3>Карго доставка</h3>
+            <p>Доставка товаров любого объёма из Китая в Казахстан по выгодным тарифам</p>
+          </div>
+          <div class="service-card">
+            <div class="service-icon">🚚</div>
+            <h3>Отслеживание</h3>
+            <p>Удобное отслеживание ваших посылок в личном кабинете в реальном времени</p>
+          </div>
+          <div class="service-card">
+            <div class="service-icon">💰</div>
+            <h3>Прозрачные цены</h3>
+            <p>Фиксированные тарифы без скрытых комиссий и дополнительных платежей</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section">
+      <div class="container">
+        <h2 class="section-title">О компании</h2>
+        <p class="about-text">
+          Xpress Cargo — ваш надёжный партнёр в сфере международной логистики. 
+          Мы специализируемся на доставке грузов из Китая в Казахстан и предоставляем 
+          полный комплекс услуг: от консолидации товаров до доставки до двери.
+        </p>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value">5+</div>
+            <div class="stat-label">Лет опыта</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">10K+</div>
+            <div class="stat-label">Довольных клиентов</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">50K+</div>
+            <div class="stat-label">Доставленных посылок</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="container">
+        <h2>Свяжитесь с нами</h2>
+        <p>Работаем ежедневно с 9:00 до 20:00</p>
+        <div class="contact-info">
+          <span>📞 +7 708 764 8100</span>
+          <span>📧 info@xprc.kz</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Install PWA -->
+    <InstallPwa />
   </div>
 </template>
 
 <script setup lang="ts">
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import InstallPwa from '~/components/InstallPwa.vue';
 
 const { $auth } = useNuxtApp();
 const router = useRouter();
 
-const loading = ref(false);
-const error = ref('');
-
-// Проверяем, авторизован ли пользователь при загрузке страницы
+// Проверяем авторизацию и перенаправляем
 onMounted(() => {
   if ($auth) {
     const unsubscribe = onAuthStateChanged($auth, (user) => {
       if (user) {
-        // Пользователь уже авторизован, перенаправляем на дашборд
-        console.log('User already authenticated, redirecting to dashboard');
         const isAdmin = user.email === 'kairfakomylife@gmail.com';
         router.push(isAdmin ? '/admin' : '/dashboard');
       }
     });
     
-    // Дополнительная проверка текущего пользователя
     if ($auth.currentUser) {
-      console.log('User already authenticated on mount, redirecting to dashboard');
       const isAdmin = $auth.currentUser.email === 'kairfakomylife@gmail.com';
       router.push(isAdmin ? '/admin' : '/dashboard');
     }
     
-    // Очищаем слушатель при размонтировании
     onUnmounted(() => unsubscribe());
   }
 });
-
-const handleGoogleLogin = async () => {
-  loading.value = true;
-  error.value = '';
-
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup($auth, provider);
-    
-    const ADMIN_EMAIL = 'kairfakomylife@gmail.com';
-    const userEmail = result.user.email;
-    
-    // Добавляем небольшую задержку для уверенности в перенаправлении
-    setTimeout(() => {
-      if (userEmail === ADMIN_EMAIL) {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
-      }
-    }, 300);
-  } catch (e: any) {
-    console.error('Login error:', e);
-    if (e.code === 'auth/popup-closed-by-user') {
-      error.value = 'Вход отменен.';
-    } else {
-      error.value = 'Ошибка при входе.';
-    }
-  } finally {
-    loading.value = false;
-  }
-};
 </script>
 
 <style scoped>
 .home {
-  min-height: calc(100vh - 70px - 50px); /* Высота экрана минус высота шапки и футера в ПК версии */
-  opacity: 1 !important;
+  min-height: 100vh;
 }
 
-/* Для мобильной версии */
-@media (max-width: 768px) {
-  .home {
-    min-height: calc(100vh - 50px - 50px); /* Высота экрана минус высота шапки и футера в мобильной версии */
-    opacity: 1 !important;
-  }
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  margin-top: 0; /* Убираем отступ, так как он компенсируется через page-wrapper */
-  width: 100%;
-  max-width: 400px;
-}
-
-.auth-button {
+/* Hero Section */
+.hero-section {
+  position: relative;
+  height: 70vh;
+  min-height: 500px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 500;
-  background: white;
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  width: 100%;
-  position: relative;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  color: white;
+  text-align: center;
   overflow: hidden;
 }
 
-.auth-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/b1.jpg') center/cover no-repeat;
+  opacity: 0.2;
 }
 
-.google-btn:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 2rem;
 }
 
-.apple-btn {
-  background-color: #000;
-  color: white;
-  border: 1px solid #000;
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
-.apple-btn:hover:not(:disabled) {
-  background-color: #1a1a1a;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.hero-subtitle {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  opacity: 0.9;
 }
 
-.icon-wrapper {
+.hero-description {
+  font-size: 1rem;
+  opacity: 0.8;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.contact-info {
   display: flex;
-  align-items: center;
+  gap: 2rem;
   justify-content: center;
-  margin-right: 12px;
+  flex-wrap: wrap;
+  margin-top: 1rem;
 }
 
-.btn-text {
-  flex: 1;
-  text-align: left;
+.contact-info span {
+  font-size: 1.1rem;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  color: #1f2937;
+}
+
+/* Services Section */
+.services-section {
+  padding: 5rem 0;
+  background: #f9fafb;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.service-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.service-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.service-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+}
+
+.service-card p {
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* About Section */
+.about-section {
+  padding: 5rem 0;
+  background: white;
+}
+
+.about-text {
+  max-width: 800px;
+  margin: 0 auto 3rem;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #4b5563;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.stat-label {
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+/* CTA Section */
+.cta-section {
+  padding: 5rem 0;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  color: white;
+  text-align: center;
+}
+
+.cta-section h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.cta-section p {
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.cta-button {
+  display: inline-block;
+  background: white;
+  color: #1e3a8a;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+  }
 }
 </style>
