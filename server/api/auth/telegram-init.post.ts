@@ -1,29 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3';
 import crypto from 'crypto';
+import { pendingTokens } from '../../utils/token-store';
 
-// In-memory store for pending auth tokens (in production, use Redis or similar)
-// This is shared across the module
-const pendingTokens = new Map<string, {
-    createdAt: number;
-    userId?: number;
-    userData?: any;
-    firebaseToken?: string;
-    confirmed: boolean;
-}>();
-
-// Clean up expired tokens every minute
-setInterval(() => {
-    const now = Date.now();
-    const TTL = 5 * 60 * 1000; // 5 minutes
-    for (const [token, data] of pendingTokens) {
-        if (now - data.createdAt > TTL) {
-            pendingTokens.delete(token);
-        }
-    }
-}, 60 * 1000);
-
-// Export for use in other files
-export { pendingTokens };
 
 export default defineEventHandler(async (event) => {
     // Generate a unique token

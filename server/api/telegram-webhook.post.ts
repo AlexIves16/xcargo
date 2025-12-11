@@ -1,7 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3';
 import { getApps, getApp, initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { pendingTokens } from './auth/telegram-init.post';
+import { pendingTokens } from '../utils/token-store';
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig();
@@ -159,17 +159,31 @@ export default defineEventHandler(async (event) => {
     const user = message.from;
 
     // Handle /start command with auth token
-    if (text.startsWith('/start auth_')) {
-        const token = text.replace('/start auth_', '').trim();
-        console.log('🔐 Processing auth token:', token);
+    if (text.startsWith('/start')) {
+        const token = text.replace('/start', '').trim().replace('auth_', '');
+        console.log('🔐 Processing start command, token:', token);
+
+        if (!token) {
+            // Check if user is already known or just say hello
+            await sendTelegramMessage(
+                config.telegramBotToken as string,
+                message.chat.id,
+                `👋 Привет, ${user.first_name}!\n\nДля входа на сайт, пожалуйста, используйте кнопку "Войти через Telegram" на странице входа.`
+            );
+            return { ok: true };
+        }
 
         const tokenData = pendingTokens.get(token);
 
         if (!tokenData) {
+            console.log('❌ Token not found in store:', token);
+            // Debug: print available tokens
+            console.log('Available tokens:', [...pendingTokens.keys()]);
+
             await sendTelegramMessage(
                 config.telegramBotToken as string,
                 message.chat.id,
-                '❌ Ссылка для входа устарела. Пожалуйста, попробуйте снова на сайте.'
+                '❌ Ссылка для входа устарела или недействительна. Пожалуйста, попробуйте снова на сайте.'
             );
             return { ok: true };
         }

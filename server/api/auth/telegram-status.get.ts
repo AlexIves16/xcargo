@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery, createError } from 'h3';
-import { pendingTokens } from './telegram-init.post';
+import { pendingTokens } from '../../utils/token-store';
 
 export default defineEventHandler(async (event) => {
     const query = getQuery(event);
