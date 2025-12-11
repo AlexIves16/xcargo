@@ -102,7 +102,11 @@ const onCaptchaExpire = () => {
 
 // Animation Trigger
 watch(() => props.triggerAnim, (val) => {
-// ...
+  if (val) {
+    setTimeout(() => {
+      showContent.value = true
+    }, 100)
+  }
 })
 
 // Search Logic
