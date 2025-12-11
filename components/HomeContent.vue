@@ -131,6 +131,11 @@ onMounted(() => {
     deferredPrompt.value = e
   })
 
+  // Check if event already fired (captured by pwa-debug plugin)
+  if (window.deferredPrompt) {
+    deferredPrompt.value = window.deferredPrompt
+  }
+
   window.addEventListener('appinstalled', () => {
     isPwaInstalled.value = true
     deferredPrompt.value = null
