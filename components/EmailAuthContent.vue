@@ -14,7 +14,47 @@
     <div class="content-body" :class="{ visible: showContent }">
       <div class="glass-card">
         
-        <div v-if="sent" class="success-state">
+        <!-- Tabs -->
+        <div class="tabs-header">
+           <button 
+             class="tab-btn" 
+             :class="{ active: mode === 'password' }"
+             @click="mode = 'password'"
+           >
+             {{ t('auth_pages.login.tab_password') || 'Пароль' }}
+           </button>
+           <button 
+             class="tab-btn" 
+             :class="{ active: mode === 'link' }"
+             @click="mode = 'link'"
+           >
+             {{ t('auth_pages.login.tab_link') || 'Регистрация' }}
+           </button>
+        </div>
+
+        <!-- Password Login Form -->
+        <form v-if="mode === 'password'" @submit.prevent="loginWithPassword" class="auth-form">
+            <div class="form-group">
+                <label>Email</label>
+                <input v-model="email" type="email" required class="input-field" placeholder="name@example.com" />
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input v-model="password" type="password" required class="input-field" placeholder="••••••" />
+            </div>
+            <button type="submit" :disabled="loading" class="action-btn primary submit-btn">
+                <span v-if="loading">Вход...</span>
+                <span v-else>Войти</span>
+            </button>
+             <div class="back-link-container">
+               <a href="#" @click.prevent="$emit('navigate', 'login')" class="text-blue-400 hover:text-blue-300">
+                   Назад
+               </a>
+            </div>
+        </form>
+
+        <div v-else-if="mode === 'link'">
+            <div v-if="sent" class="success-state">
           <div class="icon-circle">
             <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -98,6 +138,7 @@
               </a>
            </div>
         </form>
+        </div> <!-- End of mode === 'link' wrapper -->
 
       </div>
     </div>
@@ -106,7 +147,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { sendSignInLinkToEmail } from 'firebase/auth';
+import { sendSignInLinkToEmail, signInWithEmailAndPassword } from 'firebase/auth'; // Added import
 import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps({
@@ -122,8 +163,10 @@ const { $auth } = useNuxtApp()
 const { t } = useI18n()
 
 // Logic Vars
+const mode = ref('password'); // 'password' | 'link' - Default to password as per request logic ("not only reg but auth")
 const name = ref('');
 const email = ref('');
+const password = ref(''); // New
 const avatarPreview = ref(null);
 const loading = ref(false);
 const sent = ref(false);
@@ -195,7 +238,7 @@ const sendLink = async () => {
             // Updated to match your app structure - relying on page handling /auth/finish
             // In Hash mode or SPA, this might need to be specific.
             // Using /auth-finish route key logic
-            url: window.location.origin + '/auth/finish',
+            url: window.location.origin + '/auth/finish?email=' + encodeURIComponent(email.value),
             handleCodeInApp: true,
         };
 
@@ -205,6 +248,19 @@ const sendLink = async () => {
     } catch (error) {
         console.error('Email Auth Error:', error);
         alert(t('auth_pages.finish.error_title') + ': ' + error.message);
+    } finally {
+        loading.value = false;
+    }
+};
+
+const loginWithPassword = async () => {
+    loading.value = true;
+    try {
+        await signInWithEmailAndPassword($auth, email.value, password.value);
+        emit('navigate', 'dashboard');
+    } catch (e) {
+        console.error("Login Error:", e);
+        alert('Ошибка входа: ' + (e.message === 'Firebase: Error (auth/invalid-credential).' ? 'Неверный email или пароль' : e.message));
     } finally {
         loading.value = false;
     }
@@ -312,6 +368,31 @@ const sendLink = async () => {
   border-radius: 20px;
   backdrop-filter: blur(10px);
   width: 100%;
+}
+
+.tabs-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 10px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 8px;
+}
+
+.tab-btn.active {
+  color: white;
+  background: rgba(255,255,255,0.1);
+  font-weight: 600;
 }
 
 .auth-form {

@@ -85,6 +85,11 @@ import DashboardContent from '../components/DashboardContent.vue'
 import AdminContent from '../components/AdminContent.vue'
 
 const showSplash = ref(true)
+
+// Skip splash on auth link
+if (typeof window !== 'undefined' && window.location.pathname === '/auth/finish') {
+  showSplash.value = false
+}
 const globePositionX = ref(190)
 const currentView = ref('home')
 

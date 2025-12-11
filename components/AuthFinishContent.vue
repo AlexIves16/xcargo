@@ -41,13 +41,36 @@
         </button>
       </div>
 
+      <!-- Set Password State (New) -->
+      <div v-else-if="settingPassword" class="state-container left-align">
+          <h2 class="state-title">Создание пароля</h2>
+          <p class="state-desc">Придумайте пароль, чтобы в следующий раз входить без письма.</p>
+          
+          <form @submit.prevent="savePassword" class="auth-form">
+             <input 
+                 v-model="passwordInput"
+                 type="password" 
+                 required
+                 minlength="6"
+                 class="input-field"
+                 placeholder="Новый пароль (минимум 6 символов)"
+             />
+             <button type="submit" class="action-btn primary">
+                 Сохранить и войти
+             </button>
+             <button type="button" @click="skipPassword" class="text-gray-400 hover:text-white mt-4 text-sm w-full">
+                 Пропустить (входить по ссылке)
+             </button>
+          </form>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { isSignInWithEmailLink, signInWithEmailLink, updateProfile } from 'firebase/auth';
+import { isSignInWithEmailLink, signInWithEmailLink, updateProfile, updatePassword } from 'firebase/auth';
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { useI18n } from '@/composables/useI18n'
 
@@ -57,7 +80,9 @@ const { t } = useI18n()
 
 const processing = ref(true);
 const waitingForEmail = ref(false);
+const settingPassword = ref(false); // New state
 const emailInput = ref('');
+const passwordInput = ref('');
 const error = ref('');
 
 const goToEmail = () => {
@@ -113,9 +138,10 @@ const completeSignIn = async (email) => {
     localStorage.removeItem('tempName');
     localStorage.removeItem('tempAvatar');
 
-    // Redirect to Dashboard
-    router.push('/dashboard'); 
-
+    // Prompt for password creation instead of redirecting immediately
+    processing.value = false;
+    settingPassword.value = true;
+    
   } catch (e) {
     console.error('Auth Error:', e);
     if (e.code === 'auth/invalid-action-code') {
@@ -136,9 +162,15 @@ onMounted(async () => {
   if (isSignInWithEmailLink($auth, window.location.href)) {
     let email = localStorage.getItem('emailForSignIn');
     
+    // Check URL params if local storage is empty
+    if (!email) {
+       const params = new URLSearchParams(window.location.search);
+       email = params.get('email');
+    }
+
     if (!email) {
       waitingForEmail.value = true;
-      processing.value = false;
+      processing.value = false;   
     } else {
       await completeSignIn(email);
     }
@@ -147,6 +179,31 @@ onMounted(async () => {
       processing.value = false;
   }
 });
+</script>
+
+<script>
+// Separate block for additional functions if needed, simply modifying usage above in <script setup>
+</script>
+
+<script setup>
+// Adding savePassword and skipPassword functions
+const savePassword = async () => {
+    if (!passwordInput.value || passwordInput.value.length < 6) {
+        alert('Пароль должен быть не менее 6 символов');
+        return;
+    }
+    try {
+        await updatePassword($auth.currentUser, passwordInput.value);
+        router.push('/dashboard');
+    } catch (e) {
+        console.error('Password set error:', e);
+        alert('Ошибка сохранения пароля: ' + e.message);
+    }
+};
+
+const skipPassword = () => {
+    router.push('/dashboard');
+};
 </script>
 
 <style scoped>
