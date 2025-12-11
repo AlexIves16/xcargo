@@ -64,6 +64,7 @@ export default defineNuxtConfig({
       telegramBotName: '',
       spreadsheetId: '',
       turnstileSiteKey: '',
+      firebaseVapidKey: 'BO91snwciBEECru5uzrbeRLjlgWf878kyNdiU6xDSFB3a3AQ1CCsMCQp3Rod4-SGIUIORH6S8TOcTL6i054vdGI',
     }
   },
 })

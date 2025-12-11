@@ -234,10 +234,12 @@ const enableNotifications = async () => {
       }
 
       const config = useRuntimeConfig()
-
+      
+      const vapidKey = config.public.firebaseVapidKey || undefined;
+      
       // Get Token
       const currentToken = await getToken(messaging, { 
-        vapidKey: config.public.firebaseVapidKey || 'BM0eC-FqY...YOUR_KEY_HERE...' // Ideally should be in config
+        vapidKey: vapidKey 
       })
 
       if (currentToken) {
