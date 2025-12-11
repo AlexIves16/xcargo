@@ -238,25 +238,9 @@ const enableNotifications = async () => {
       let vapidKey = config.public.firebaseVapidKey;
       console.log('🔐 Raw VAPID Key:', vapidKey, 'Length:', vapidKey?.length);
       
-      // Fix VAPID Key format (Base64URL -> Base64) for browser compatibility
       if (vapidKey) {
-         // Remove any whitespace first
          vapidKey = vapidKey.trim();
-         
-         // Replace - with + and _ with /
-         vapidKey = vapidKey.replace(/-/g, '+').replace(/_/g, '/');
-         // Add padding if needed
-         const padding = '='.repeat((4 - vapidKey.length % 4) % 4);
-         vapidKey = vapidKey + padding;
-         
-         console.log('🔐 Sanitized VAPID Key:', vapidKey, 'Length:', vapidKey.length);
-         try {
-            // Verify if it is valid base64 (this will throw if not)
-            window.atob(vapidKey);
-            console.log('✅ Key is valid Base64');
-         } catch (e) {
-            console.error('❌ Check: Invalid Base64 in VAPID key!', e);
-         }
+         console.log('🔐 Using VAPID Key:', vapidKey);
       }
 
       // Get Token
