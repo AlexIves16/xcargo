@@ -52,22 +52,32 @@ export default defineEventHandler(async (event) => {
     const db = getFirestore(app);
 
     // 2. Initialize Google Sheets Auth
-    console.log('[Sync] Initializing Google JWT Client...');
-    const jwtClient = new google.auth.JWT(
-        clientEmail,
-        undefined,
-        privateKey,
-        ['https://www.googleapis.com/auth/spreadsheets']
-    );
+    console.log('[Sync] Initializing Google Auth (JWT)...');
 
-    const sheets = google.sheets({ version: 'v4', auth: jwtClient });
+    // Use JWT directly for explicit service account auth
+    const authClient = new google.auth.JWT({
+        email: clientEmail,
+        key: privateKey,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    });
+
+    try {
+        await authClient.authorize();
+        console.log('[Sync] JWT Auth Client verified and authorized.');
+    } catch (e: any) {
+        console.error('[Sync] JWT Auth Failed:', e);
+        throw new Error(`Google JWT Auth Failed: ${e.message}`);
+    }
+
+    const sheets = google.sheets({ version: 'v4', auth: authClient as any });
 
     try {
         // --- GET SHEET NAME ---
         console.log('[Sync] Authenticated. Fetching spreadsheet metadata...');
         // Fetch spreadsheet metadata to get the name of the first sheet dynamically
         const meta = await sheets.spreadsheets.get({
-            spreadsheetId: SPREADSHEET_ID
+            spreadsheetId: SPREADSHEET_ID,
+            auth: authClient as any
         });
 
         const firstSheetTitle = meta.data.sheets?.[0]?.properties?.title;
@@ -92,6 +102,7 @@ export default defineEventHandler(async (event) => {
         const sheetResponse = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
             range: rangeName,
+            auth: authClient as any
         });
 
         const rows = sheetResponse.data.values || [];
@@ -123,7 +134,8 @@ export default defineEventHandler(async (event) => {
                 valueInputOption: 'RAW',
                 requestBody: {
                     values: [['Трек-номер', 'Описание', 'Статус', 'Дата добавления', 'ID Пользователя']]
-                }
+                },
+                auth: authClient as any
             });
         }
 
@@ -222,7 +234,8 @@ export default defineEventHandler(async (event) => {
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
                     values: sheetAppends
-                }
+                },
+                auth: authClient as any
             });
         }
 
