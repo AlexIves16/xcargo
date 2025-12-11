@@ -32,8 +32,18 @@ export default defineNuxtPlugin((nuxtApp) => {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // Session Management Logic
+  let messaging = null;
+
   if (process.client) {
+    import('firebase/messaging').then(({ getMessaging }) => {
+      // Create messaging instance
+      try {
+        messaging = getMessaging(app);
+      } catch (e) {
+        console.warn('Firebase Messaging not supported:', e);
+      }
+    });
+
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Check if running in PWA (Standalone) mode
@@ -61,7 +71,8 @@ export default defineNuxtPlugin((nuxtApp) => {
   return {
     provide: {
       auth,
-      db
+      db,
+      messaging: () => messaging // Return as function or getter to handle async import
     }
   };
 });

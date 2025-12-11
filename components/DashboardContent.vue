@@ -143,8 +143,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc } from 'firebase/firestore'
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
+import { getToken } from 'firebase/messaging'
 import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps({
@@ -218,13 +219,58 @@ const enableNotifications = async () => {
     const permission = await Notification.requestPermission()
     
     if (permission === 'denied') {
-      alert('Вы заблокировали уведомления. Разрешите их в настройках браузера.')
+      alert('🚫 Уведомления заблокированы.\n\nКак исправить:\n1. Нажмите на иконку замка 🔒 в адресной строке браузера (слева от URL).\n2. Нажмите "Настройки сайта" или "Разрешения".\n3. Найдите "Уведомления" и выберите "Разрешить".\n4. Обновите страницу.')
       return
     }
     
     if (permission === 'granted') {
-      // For now, just show success - FCM requires additional server-side setup
-      alert('Уведомления включены! (Push-уведомления требуют дополнительной настройки сервера)')
+      // Get messaging instance
+      const { $messaging, $auth, $db } = useNuxtApp()
+      const messaging = $messaging()
+      
+      if (!messaging) {
+        alert('Ошибка инициализации сервиса уведомлений (Messaging not ready). Попробуйте обновить страницу.')
+        return
+      }
+
+      const config = useRuntimeConfig()
+
+      // Get Token
+      const currentToken = await getToken(messaging, { 
+        vapidKey: config.public.firebaseVapidKey || 'BM0eC-FqY...YOUR_KEY_HERE...' // Ideally should be in config
+      })
+
+      if (currentToken) {
+        console.log('✅ FCM Token received:', currentToken)
+        
+        if ($auth.currentUser) {
+           const userRef = doc($db, 'users', $auth.currentUser.uid)
+           
+           // Ensure user doc exists, then update
+           const userSnap = await getDoc(userRef)
+           
+           if (!userSnap.exists()) {
+              await setDoc(userRef, {
+                 email: $auth.currentUser.email,
+                 fcmToken: currentToken,
+                 updatedAt: serverTimestamp() 
+              })
+           } else {
+              await updateDoc(userRef, {
+                 fcmToken: currentToken,
+                 updatedAt: serverTimestamp()
+              })
+           }
+           
+           alert('✅ Уведомления успешно включены! Теперь вы будете получать оповещения о статусе посылок.')
+        } else {
+           alert('Ошибка: Пользователь не авторизован.')
+        }
+
+      } else {
+        console.log('No registration token available. Request permission to generate one.')
+        alert('Не удалось получить токен устройства.')
+      }
     }
   } catch (e) {
     console.error('Notification error:', e)
