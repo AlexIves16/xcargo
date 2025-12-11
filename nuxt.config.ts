@@ -9,16 +9,14 @@ export default defineNuxtConfig({
       autoprefixer: {},
     },
   },
+  /* CSP removed temporarily
   app: {
     head: {
       meta: [
-        {
-          'http-equiv': 'Content-Security-Policy',
-          content: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://flagcdn.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://identitytoolkit.googleapis.com https://*.cloudfunctions.net; frame-src 'self' https://*.firebaseapp.com"
-        }
       ]
     }
   },
+  */
   runtimeConfig: {
     public: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
