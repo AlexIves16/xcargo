@@ -44,6 +44,8 @@ export default defineEventHandler(async (event) => {
             const userData = userSnap.data()
 
             if (userData && userData.fcmToken) {
+                console.log(`🔍 Found FCM Token for user ${userData.email}:`, userData.fcmToken.substring(0, 10) + '...')
+
                 const statusText = STATUS_MAP[status] || status
 
                 const message = {
@@ -59,16 +61,18 @@ export default defineEventHandler(async (event) => {
                     }
                 }
 
+                console.log('🚀 Sending FCM payload:', JSON.stringify(message, null, 2))
+
                 try {
-                    await messaging.send(message)
+                    const response = await messaging.send(message)
                     notificationSent = true
-                    console.log(`✅ Notification sent to ${userData.email} for track ${trackData.number}`)
+                    console.log(`✅ Notification sent to ${userData.email} for track ${trackData.number}. Message ID:`, response)
                 } catch (msgError) {
-                    console.error('❌ FCM Send Error:', msgError)
+                    console.error('❌ FCM Send Error Details:', JSON.stringify(msgError, null, 2))
                     // Don't fail the whole request just because notification failed
                 }
             } else {
-                console.log(`ℹ️ No FCM token for user ${trackData.userId}`)
+                console.log(`ℹ️ No FCM token found for user ${trackData.userId}. User Data:`, userData ? 'Exists' : 'Missing')
             }
         }
 

@@ -166,45 +166,71 @@ const loading = ref(false)
 const loadingData = ref(true)
 const error = ref('')
 
+const currentUser = useState('firebaseUser')
+// Fallback if not ready yet (avoid hydration mismatch if possible, but safe here)
+
 const isAdmin = computed(() => {
-  const currentUser = $auth?.currentUser
-  if (!currentUser) return false
-  return currentUser.email === 'kairfakomylife@gmail.com'
+  if (!currentUser.value) return false
+  return currentUser.value.email === 'kairfakomylife@gmail.com'
 })
 
 const userName = computed(() => {
-  const currentUser = $auth?.currentUser
-  if (!currentUser) return 'Пользователь'
-  return currentUser.displayName || currentUser.email?.split('@')[0] || 'Пользователь'
+  if (!currentUser.value) return 'Пользователь'
+  return currentUser.value.displayName || currentUser.value.email?.split('@')[0] || 'Пользователь'
 })
 
 const userPhoto = computed(() => {
-  const currentUser = $auth?.currentUser
-  return currentUser?.photoURL || null
+  return currentUser.value?.photoURL || null
 })
 
+const fetchData = () => {
+    if (!currentUser.value) return 
+    
+    // Avoid double fetch if already loading or already have data (optional, but good)
+    // But here we want to ensure we get data
+    
+    const q = query(
+      collection($db, 'tracks'),
+      where('userId', '==', currentUser.value.uid),
+      orderBy('createdAt', 'desc')
+    )
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      tracks.value = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      loadingData.value = false
+    }, (err) => {
+      console.error("Error fetching tracks:", err)
+      error.value = "Ошибка загрузки данных."
+      loadingData.value = false
+    })
+    
+    return unsubscribe
+}
+
+let unsub: (() => void) | null = null
+
 onMounted(() => {
-  if (!$auth?.currentUser) return
+  if (currentUser.value) {
+     unsub = fetchData()
+  }
+})
 
-  const q = query(
-    collection($db, 'tracks'),
-    where('userId', '==', $auth.currentUser.uid),
-    orderBy('createdAt', 'desc')
-  )
+watch(currentUser, (newVal) => {
+    if (newVal && !unsub) {
+        unsub = fetchData()
+    } else if (!newVal && unsub) {
+        // User logged out
+        unsub()
+        unsub = null
+        tracks.value = []
+    }
+})
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    tracks.value = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
-    loadingData.value = false
-  }, (err) => {
-    console.error("Error fetching tracks:", err)
-    error.value = "Ошибка загрузки данных."
-    loadingData.value = false
-  })
-
-  onUnmounted(() => unsubscribe())
+onUnmounted(() => {
+    if (unsub) unsub()
 })
 
 const enableNotifications = async () => {
@@ -251,15 +277,15 @@ const enableNotifications = async () => {
       if (currentToken) {
         console.log('✅ FCM Token received:', currentToken)
         
-        if ($auth.currentUser) {
-           const userRef = doc($db, 'users', $auth.currentUser.uid)
+        if (currentUser.value) {
+           const userRef = doc($db, 'users', currentUser.value.uid)
            
            // Ensure user doc exists, then update
            const userSnap = await getDoc(userRef)
            
            if (!userSnap.exists()) {
               await setDoc(userRef, {
-                 email: $auth.currentUser.email,
+                 email: currentUser.value.email,
                  fcmToken: currentToken,
                  updatedAt: serverTimestamp() 
               })
@@ -296,9 +322,9 @@ const addTrackNumber = async () => {
     await addDoc(collection($db, 'tracks'), {
       number: newTrackNumber.value.trim(),
       description: newTrackDescription.value.trim(),
-      userId: $auth.currentUser.uid,
-      userEmail: $auth.currentUser.email,
-      userName: $auth.currentUser.displayName || 'Пользователь',
+      userId: currentUser.value.uid,
+      userEmail: currentUser.value.email,
+      userName: currentUser.value.displayName || 'Пользователь',
       createdAt: serverTimestamp(),
       status: 'pending'
     })

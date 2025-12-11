@@ -16,16 +16,29 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compa
 
 // See if we can get away with just this for now:
 self.addEventListener('push', function (event) {
-    if (event.data) {
-        const payload = event.data.json();
-        console.log('Background push received', payload);
+    console.log('[Service Worker] Push Received.');
+    console.log(`[Service Worker] Push had this data: "${event.data.text()}"`);
 
-        const notificationTitle = payload.notification.title;
+    if (event.data) {
+        let payload;
+        try {
+            payload = event.data.json();
+        } catch (e) {
+            console.error('[Service Worker] Error parsing JSON:', e);
+            return;
+        }
+
+        console.log('[Service Worker] Notification payload:', payload);
+
+        const notificationTitle = payload.notification ? payload.notification.title : 'Новое уведомление';
         const notificationOptions = {
-            body: payload.notification.body,
-            icon: '/icons/pwa-192x192.png'
+            body: payload.notification ? payload.notification.body : 'Проверьте статус посылки',
+            icon: '/icons/pwa-192x192.png',
+            data: payload.data
         };
 
-        self.registration.showNotification(notificationTitle, notificationOptions);
+        event.waitUntil(
+            self.registration.showNotification(notificationTitle, notificationOptions)
+        );
     }
 });

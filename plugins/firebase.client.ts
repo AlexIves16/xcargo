@@ -51,6 +51,10 @@ export default defineNuxtPlugin((nuxtApp) => {
     });
 
     onAuthStateChanged(auth, async (user) => {
+      // Update global reactive state
+      const firebaseUser = useState('firebaseUser')
+      firebaseUser.value = user
+
       if (user) {
         // Check if running in PWA (Standalone) mode
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
