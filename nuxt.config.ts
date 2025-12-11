@@ -66,7 +66,7 @@ export default defineNuxtConfig({
       firebaseMeasurementId: '',
       telegramBotName: '',
       spreadsheetId: '',
-      recaptchaSiteKey: '6Lfz2CgsAAAAAPR2EmOnpqMQty5Gp2ZoS4nSV896',
+      recaptchaSiteKey: '6LeA3SgsAAAAAONjIzFrYpzZBADfLB-OwtnP_xWB',
       firebaseVapidKey: 'BO91snwciBEECru5uzrbeRLjlgWf878kyNdiU6xDSFB3a3AQ1CCsMCQp3Rod4-SGIUIORH6S8TOcTL6i054vdGI',
     }
   },

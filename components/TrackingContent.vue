@@ -90,7 +90,7 @@ const loading = ref(false)
 const captchaToken = ref('')
 const { t } = useI18n()
 const config = useRuntimeConfig()
-const siteKey = config.public.recaptchaSiteKey || '6Lfz2CgsAAAAAPR2EmOnpqMQty5Gp2ZoS4nSV896'
+const siteKey = config.public.recaptchaSiteKey || '6LeA3SgsAAAAAONjIzFrYpzZBADfLB-OwtnP_xWB'
 
 const onCaptchaVerify = (token) => {
     captchaToken.value = token
