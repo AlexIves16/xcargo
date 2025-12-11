@@ -2,6 +2,7 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   compatibilityDate: '2025-12-10',
+  ssr: false,  // Run as pure SPA - fixes production layout issues
 
   // CSP headers for production
   routeRules: {
