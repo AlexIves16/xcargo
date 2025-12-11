@@ -509,10 +509,12 @@ const logout = async () => {
   width: calc(100vw - 120px - 20vw); /* Responsive width similar to dashboard */
   height: 100vh;
   padding: 15vh 40px 40px 40px;
-  overflow-y: auto;
+  overflow: hidden; /* No scroll on main container */
   color: white;
   font-family: 'Poppins', sans-serif;
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header */
@@ -550,6 +552,15 @@ const logout = async () => {
 .text-btn:hover { color: #818CF8; }
 .text-btn.danger:hover { color: #ef4444; }
 
+/* Content Grid */
+.content-grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* Critical for nested flex scroll */
+  overflow: hidden;
+}
+
 /* Panels */
 .glass-panel {
   background: rgba(255, 255, 255, 0.05);
@@ -558,6 +569,10 @@ const logout = async () => {
   padding: 25px;
   backdrop-filter: blur(10px);
   margin-bottom: 25px;
+}
+
+.upload-panel {
+  flex-shrink: 0; /* Don't shrink upload panel */
 }
 
 .panel-title {
@@ -670,8 +685,44 @@ const logout = async () => {
 .text-btn.small-btn { font-size: 0.85rem; }
 
 /* Table */
+.table-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* Important for flex child scroll */
+  overflow: hidden;
+}
+
 .table-container {
-    overflow-x: auto;
+  flex: 1;
+  overflow: auto;
+  border-radius: 12px;
+}
+
+/* Custom Scrollbar Styling */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.4);
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.6);
+}
+
+/* Firefox scrollbar */
+.table-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.4) rgba(255, 255, 255, 0.05);
 }
 .glass-table {
   width: 100%;

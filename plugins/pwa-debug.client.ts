@@ -12,7 +12,6 @@ export default defineNuxtPlugin(() => {
         // 2. Listen for install prompt
         window.addEventListener('beforeinstallprompt', (e) => {
             console.log('🔥 PWA Install Prompt fired! App IS installable.');
-            // Make it available globally for testing in console
             (window as any).deferredPrompt = e;
         });
 
@@ -24,52 +23,54 @@ export default defineNuxtPlugin(() => {
         const link = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
         if (link) {
             console.log('📄 Manifest found:', link.href);
-            fetch(link.href)
-                .then(res => {
-                    if (res.ok) return res.json();
-                    throw new Error(`Manifest fetch failed: ${res.status}`);
-                })
-                .then(manifest => {
-                    console.log('📄 Manifest content:', manifest);
-                    // Check icons
-                    if (manifest.icons && Array.isArray(manifest.icons)) {
-                        manifest.icons.forEach((icon: any) => {
-                            fetch(icon.src)
-                                .then(res => {
-                                    if (res.ok) console.log(`✅ Icon found: ${icon.src}`);
-                                    else console.error(`❌ Icon missing: ${icon.src} (${res.status})`);
-                                })
-                                .catch(err => console.error(`❌ Icon error: ${icon.src}`, err));
-                        });
-                    }
-                })
-                .catch(err => console.error('❌ Error loading manifest:', err));
         } else {
             console.error('❌ Manifest link not found in DOM!');
         }
 
-        // 4. Check Service Worker with retry (max 5 attempts)
-        let swRetryCount = 0;
-        const maxRetries = 5;
-        const checkSW = () => {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    if (registrations.length > 0) {
-                        console.log('⚙️ Service Worker registered:', registrations[0]);
-                        console.log('   Scope:', registrations[0].scope);
-                        console.log('   State:', registrations[0].active ? 'Active' : 'Installing/Waiting');
-                    } else if (swRetryCount < maxRetries) {
-                        swRetryCount++;
-                        console.warn(`⚠️ No Service Worker registered yet. Retry ${swRetryCount}/${maxRetries}...`);
-                        setTimeout(checkSW, 1000);
-                    } else {
-                        console.warn('⚠️ Service Worker not registered after max retries');
+        // 4. Register Service Worker with auto-update
+        if ('serviceWorker' in navigator) {
+            // First, unregister any old service workers
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => {
+                    // Check if it's an old workbox SW
+                    if (registration.active?.scriptURL?.includes('workbox')) {
+                        console.log('🗑️ Unregistering old Workbox SW:', registration.scope);
+                        registration.unregister();
                     }
                 });
-            } else {
-                console.error('❌ Service Worker not supported in this browser');
-            }
-        };
-        checkSW();
+            });
+
+            // Register new service worker
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .then(registration => {
+                    console.log('⚙️ Service Worker registered:', registration.scope);
+
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('🔄 New Service Worker found, installing...');
+
+                        newWorker?.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('🔄 New version available! Refresh to update.');
+                            }
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('❌ Service Worker registration failed:', error);
+                });
+
+            // Listen for SW updates and reload
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    console.log('🔄 New Service Worker activated, reloading...');
+                    window.location.reload();
+                }
+            });
+        }
     }
 });
+

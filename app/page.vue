@@ -107,6 +107,9 @@ const onMenuSelect = (item) => {
   } else if (item.key === 'login') {
     currentView.value = 'login'
     if (typeof window !== 'undefined') window.history.pushState({ view: 'login' }, '', '/login')
+  } else if (item.key === 'dashboard') {
+    currentView.value = 'dashboard'
+    if (typeof window !== 'undefined') window.history.pushState({ view: 'dashboard' }, '', '/dashboard')
   } else {
     currentView.value = 'home'
     if (typeof window !== 'undefined') window.history.pushState({ view: 'home' }, '', '/')
