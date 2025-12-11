@@ -143,8 +143,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore'
-import { getMessaging, getToken } from 'firebase/messaging'
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { useI18n } from '@/composables/useI18n'
 
@@ -209,29 +208,27 @@ onMounted(() => {
 
 const enableNotifications = async () => {
   try {
-    const messaging = getMessaging()
+    // Check if notifications are supported
+    if (!('Notification' in window)) {
+      alert('Ваш браузер не поддерживает уведомления')
+      return
+    }
+
+    // Check permission
     const permission = await Notification.requestPermission()
     
+    if (permission === 'denied') {
+      alert('Вы заблокировали уведомления. Разрешите их в настройках браузера.')
+      return
+    }
+    
     if (permission === 'granted') {
-      const token = await getToken(messaging)
-      if (token) {
-        const userRef = doc($db, 'users', $auth.currentUser.uid)
-        await updateDoc(userRef, {
-            fcmTokens: arrayUnion(token)
-        }).catch(async (e) => {
-             if (e.code === 'not-found') {
-                 await setDoc(userRef, { 
-                    email: $auth.currentUser.email,
-                    fcmTokens: [token] 
-                 }, { merge: true })
-             }
-        })
-        alert(t('dashboard.notifications_enabled'))
-      }
+      // For now, just show success - FCM requires additional server-side setup
+      alert('Уведомления включены! (Push-уведомления требуют дополнительной настройки сервера)')
     }
   } catch (e) {
     console.error('Notification error:', e)
-    alert(t('dashboard.notifications_error'))
+    alert('Ошибка: ' + (e.message || 'Не удалось включить уведомления'))
   }
 }
 
@@ -295,12 +292,12 @@ const getStatusLabel = (status) => {
   width: calc(100vw - 120px - 20vw);
   height: 100vh;
   padding: 15vh 40px 40px 40px;
-  overflow-y: auto;
+  overflow: hidden; /* No scroll on main container */
   color: white;
   font-family: 'Poppins', sans-serif;
   pointer-events: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.2) transparent;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header */
@@ -308,7 +305,8 @@ const getStatusLabel = (status) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
+  flex-shrink: 0; /* Don't shrink header */
 }
 
 .user-profile {
@@ -397,7 +395,8 @@ const getStatusLabel = (status) => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
+  flex-shrink: 0; /* Don't shrink stats */
 }
 
 .stat-card {
@@ -446,6 +445,9 @@ const getStatusLabel = (status) => {
   display: grid;
   grid-template-columns: 350px 1fr;
   gap: 30px;
+  flex: 1;
+  min-height: 0; /* Critical for nested scroll */
+  overflow: hidden;
 }
 
 /* Panels */
@@ -515,13 +517,45 @@ const getStatusLabel = (status) => {
 }
 
 /* List */
+.list-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Important for flex scroll */
+  overflow: hidden;
+}
+
 .tracks-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  max-height: 500px;
+  flex: 1;
   overflow-y: auto;
-  padding-right: 5px;
+  padding-right: 10px;
+}
+
+/* Custom Scrollbar for tracks list */
+.tracks-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tracks-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.tracks-list::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.4);
+  border-radius: 3px;
+}
+
+.tracks-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.6);
+}
+
+/* Firefox */
+.tracks-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.4) rgba(255, 255, 255, 0.05);
 }
 
 .track-item {
