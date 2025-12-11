@@ -179,14 +179,6 @@ onMounted(async () => {
       processing.value = false;
   }
 });
-</script>
-
-<script>
-// Separate block for additional functions if needed, simply modifying usage above in <script setup>
-</script>
-
-<script setup>
-// Adding savePassword and skipPassword functions
 const savePassword = async () => {
     if (!passwordInput.value || passwordInput.value.length < 6) {
         alert('Пароль должен быть не менее 6 символов');
