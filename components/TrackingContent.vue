@@ -29,7 +29,7 @@
         
         <!-- CAPTCHA -->
         <div class="captcha-wrapper">
-            <NuxtTurnstile v-model="captchaToken" class="turnstile-widget" />
+            <NuxtTurnstile v-model="captchaToken" site-key="0x4AAAAAACCekjF3mSEvD-2s" class="turnstile-widget" />
         </div>
       </div>
 

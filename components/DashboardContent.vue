@@ -218,34 +218,63 @@ onMounted(() => {
   }
 })
 
-watch(currentUser, (newVal) => {
-    if (newVal && !unsub) {
-        unsub = fetchData()
+const syncUserProfile = async () => {
+    if (!currentUser.value) return;
+    try {
+        const userRef = doc($db, 'users', currentUser.value.uid);
+        await setDoc(userRef, {
+            email: currentUser.value.email,
+            displayName: currentUser.value.displayName || '',
+            photoURL: currentUser.value.photoURL || '',
+            lastLogin: serverTimestamp()
+        }, { merge: true });
+        console.log('👤 User profile synced');
+    } catch (e) {
+        console.error('Error syncing profile:', e);
+    }
+}
+
+watch(currentUser, async (newVal) => {
+    if (newVal) {
+        // 1. Fetch tracks
+        if (!unsub) unsub = fetchData();
+        
+        // 2. Ensure User Doc Exists
+        await syncUserProfile();
+
+        // 3. If notifications already granted, sync token silently
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            enableNotifications(true); // Silent mode
+        }
+
     } else if (!newVal && unsub) {
         // User logged out
         unsub()
         unsub = null
         tracks.value = []
     }
-})
+}, { immediate: true })
 
 onUnmounted(() => {
     if (unsub) unsub()
 })
 
-const enableNotifications = async () => {
+const enableNotifications = async (silent = false) => {
   try {
     // Check if notifications are supported
     if (!('Notification' in window)) {
-      alert('Ваш браузер не поддерживает уведомления')
+      if (!silent) alert('Ваш браузер не поддерживает уведомления')
       return
     }
 
     // Check permission
-    const permission = await Notification.requestPermission()
+    let permission = Notification.permission
+    if (permission === 'default') {
+        permission = await Notification.requestPermission()
+    }
     
     if (permission === 'denied') {
-      alert('🚫 Уведомления заблокированы.\n\nКак исправить:\n1. Нажмите на иконку замка 🔒 в адресной строке браузера (слева от URL).\n2. Нажмите "Настройки сайта" или "Разрешения".\n3. Найдите "Уведомления" и выберите "Разрешить".\n4. Обновите страницу.')
+      if (!silent) alert('🚫 Уведомления заблокированы.\n\nКак исправить:\n1. Нажмите на иконку замка 🔒 в адресной строке браузера (слева от URL).\n2. Нажмите "Настройки сайта" или "Разрешения".\n3. Найдите "Уведомления" и выберите "Разрешить".\n4. Обновите страницу.')
       return
     }
     
@@ -255,19 +284,14 @@ const enableNotifications = async () => {
       const messaging = $messaging()
       
       if (!messaging) {
-        alert('Ошибка инициализации сервиса уведомлений (Messaging not ready). Попробуйте обновить страницу.')
+        if (!silent) alert('Ошибка инициализации сервиса уведомлений (Messaging not ready). Попробуйте обновить страницу.')
         return
       }
 
       const config = useRuntimeConfig()
       
       let vapidKey = config.public.firebaseVapidKey;
-      console.log('🔐 Raw VAPID Key:', vapidKey, 'Length:', vapidKey?.length);
-      
-      if (vapidKey) {
-         vapidKey = vapidKey.trim();
-         console.log('🔐 Using VAPID Key:', vapidKey);
-      }
+      if (vapidKey) vapidKey = vapidKey.trim();
 
       // Get Token
       const currentToken = await getToken(messaging, { 
@@ -280,37 +304,30 @@ const enableNotifications = async () => {
         if (currentUser.value) {
            const userRef = doc($db, 'users', currentUser.value.uid)
            
-           // Ensure user doc exists, then update
-           const userSnap = await getDoc(userRef)
-           
-           if (!userSnap.exists()) {
-              await setDoc(userRef, {
+           // Always merge update
+           await setDoc(userRef, {
                  email: currentUser.value.email,
                  fcmToken: currentToken,
                  updatedAt: serverTimestamp() 
-              })
-           } else {
-              await updateDoc(userRef, {
-                 fcmToken: currentToken,
-                 updatedAt: serverTimestamp()
-              })
-           }
+           }, { merge: true })
            
-           alert('✅ Уведомления успешно включены! Теперь вы будете получать оповещения о статусе посылок.')
+           if (!silent) alert('✅ Уведомления успешно включены! Теперь вы будете получать оповещения о статусе посылок.')
         } else {
-           alert('Ошибка: Пользователь не авторизован.')
+           if (!silent) alert('Ошибка: Пользователь не авторизован.')
         }
 
       } else {
-        console.log('No registration token available. Request permission to generate one.')
-        alert('Не удалось получить токен устройства.')
+        console.log('No registration token available.')
+        if (!silent) alert('Не удалось получить токен устройства.')
       }
     }
   } catch (e) {
     console.error('Notification error:', e)
-    alert('Ошибка: ' + (e.message || 'Не удалось включить уведомления'))
+    if (!silent) alert('Ошибка: ' + (e.message || 'Не удалось включить уведомления'))
   }
 }
+
+
 
 const addTrackNumber = async () => {
   if (!newTrackNumber.value.trim()) return
@@ -775,16 +792,52 @@ const getStatusLabel = (status) => {
   }
 
   .dashboard-content {
-     left: 20px;
-     width: 90%;
-     padding-top: 15vh;
-     padding-bottom: 150px; /* Increased space for bottom menu visibility */
-     overflow-y: auto; /* Enable scroll */
-     scrollbar-width: none; /* Firefox */
+     left: 0; 
+     width: 100%;
+     padding-top: 15px; /* Less top padding since header is sticky */
+     padding-bottom: 300px; /* More bottom space for scroll */
+     overflow-y: scroll; /* Force scrolling container */
+     -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
   }
+
+  /* Sticky Header */
+  .header-section {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.85); /* Dark background to hide scroll content */
+      backdrop-filter: blur(15px);
+      margin: -15px -40px 10px -40px; /* Negative margin to span full width */
+      padding: 15px 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* Sticky Stats (Optional: user didn't ask, but good UX. Or maybe not if space is tight. User asked for Profile & Add Track) */
+  /* User said "Profile ... Add Track too". Stats are in between? 
+     Actually structure is Header -> Stats -> Main(AddTrack, List). 
+     If we make AddTrack sticky, we scroll past stats? 
+     Let's Keep Header Sticky. 
+     Make Add Track Sticky? It's below stats. 
+     If Add Track is sticky, it will stick to top (under header) when stats scroll off.
+  */
+
+  .add-track-panel {
+      position: sticky;
+      top: 85px; /* Below header */
+      z-index: 40;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(15px);
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  /* Reset other panels */
+  .stats-grid { margin-top: 0; }
+  
   .dashboard-content::-webkit-scrollbar {
      display: none; /* Chrome/Safari */
   }
+
 
   .list-panel {
       min-height: auto; /* Allow full expansion */
