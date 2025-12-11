@@ -235,8 +235,17 @@ const enableNotifications = async () => {
 
       const config = useRuntimeConfig()
       
-      const vapidKey = config.public.firebaseVapidKey || undefined;
+      let vapidKey = config.public.firebaseVapidKey;
       
+      // Fix VAPID Key format (Base64URL -> Base64) for browser compatibility
+      if (vapidKey) {
+         // Replace - with + and _ with /
+         vapidKey = vapidKey.replace(/-/g, '+').replace(/_/g, '/');
+         // Add padding if needed
+         const padding = '='.repeat((4 - vapidKey.length % 4) % 4);
+         vapidKey = vapidKey + padding;
+      }
+
       // Get Token
       const currentToken = await getToken(messaging, { 
         vapidKey: vapidKey 
