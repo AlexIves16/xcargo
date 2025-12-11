@@ -1,45 +1,42 @@
-// Service Worker v3 - Aggressive cache clearing
-// Forces fresh content on every deployment
+// Service Worker v4 - Minimal, don't intercept external resources
+// Only handles same-origin requests, lets external resources pass through
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 
 self.addEventListener('install', (event) => {
-    console.log('SW v3: Installing...');
-    // Skip waiting to activate immediately
+    console.log('SW v4: Installing...');
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    console.log('SW v3: Activating...');
+    console.log('SW v4: Activating...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
-            // Delete ALL caches to force fresh start
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    console.log('SW v3: Deleting cache:', cacheName);
+                    console.log('SW v4: Deleting cache:', cacheName);
                     return caches.delete(cacheName);
                 })
             );
         }).then(() => {
-            console.log('SW v3: All caches cleared, taking control...');
-            // Take control of all clients immediately
+            console.log('SW v4: All caches cleared');
             return self.clients.claim();
         })
     );
 });
 
-// Network-first strategy - no caching
+// Only intercept same-origin GET requests, let everything else pass through
 self.addEventListener('fetch', (event) => {
-    // Skip non-GET requests
-    if (event.request.method !== 'GET') return;
+    const url = new URL(event.request.url);
 
-    // Always fetch from network, fall back to nothing
-    event.respondWith(
-        fetch(event.request)
-            .then(response => response)
-            .catch(() => {
-                // If network fails, return nothing - forces browser to use its own cache
-                return new Response('Network error', { status: 503 });
-            })
-    );
+    // Only handle same-origin requests
+    if (url.origin !== self.location.origin) {
+        // Don't intercept external requests at all - let browser handle them
+        return;
+    }
+
+    // For same-origin, just fetch from network
+    if (event.request.method === 'GET') {
+        event.respondWith(fetch(event.request));
+    }
 });

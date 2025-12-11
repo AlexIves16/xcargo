@@ -18,7 +18,7 @@
         <p class="subtitle">{{ t('hero.desc') }}</p>
         
         <div class="buttons-row">
-          <button class="cta-btn primary" @click="installPwa">
+          <button v-if="!isPwaInstalled && deferredPrompt" class="cta-btn primary" @click="installPwa">
              <!-- Install Icon -->
              <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -106,6 +106,7 @@ watch(() => props.triggerAnim, (val) => {
 })
 
 const deferredPrompt = ref(null)
+const isPwaInstalled = ref(false)
 
 const installPwa = async () => {
   if (deferredPrompt.value) {
@@ -113,16 +114,26 @@ const installPwa = async () => {
     const { outcome } = await deferredPrompt.value.userChoice
     if (outcome === 'accepted') {
       deferredPrompt.value = null
+      isPwaInstalled.value = true
     }
-  } else {
-     alert('Функция установки недоступна или приложение уже установлено')
   }
 }
 
 onMounted(() => {
+  // Check if running as installed PWA
+  if (window.matchMedia('(display-mode: standalone)').matches || 
+      window.navigator.standalone === true) {
+    isPwaInstalled.value = true
+  }
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault()
     deferredPrompt.value = e
+  })
+
+  window.addEventListener('appinstalled', () => {
+    isPwaInstalled.value = true
+    deferredPrompt.value = null
   })
 
   if (props.triggerAnim) {
@@ -333,10 +344,10 @@ onMounted(() => {
   .home-content {
     left: 0;
     width: 100%;
-    padding: 170px 10px 140px 10px; /* Reduced side padding for more space */
+    padding: 120px 15px 130px 15px;
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Tighter vertical gap */
+    gap: 10px;
     align-items: center;
     text-align: center;
   }
@@ -345,25 +356,25 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     margin-bottom: 0;
-    padding-bottom: 20px;
+    padding-bottom: 10px;
   }
-  /* Main Title increased 1.5x */
+  /* Main Title - reduced */
   .main-title {
-    font-size: 4.5rem; 
-    line-height: 1;
-  }
-  
-  /* Intro Block also huge */
-  .intro-block h2 {
-    font-size: 4rem; 
-    margin: 0;
+    font-size: 2.2rem; 
     line-height: 1.1;
   }
-  .intro-block .subtitle {
-    font-size: 1.4rem;
+  
+  /* Intro Block - reduced */
+  .intro-block h2 {
+    font-size: 1.4rem; 
     margin: 0;
     line-height: 1.2;
-    padding: 50px;
+  }
+  .intro-block .subtitle {
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.3;
+    padding: 15px 10px;
   }
   
   /* Buttons */
@@ -371,58 +382,58 @@ onMounted(() => {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    justify-content: space-between;
+    justify-content: center;
     width: 100%;
-    gap: 15px; 
-    margin-bottom: 30px; /* Increased gap */
-    padding: 0 2px;
+    gap: 8px; 
+    margin-bottom: 15px;
+    padding: 0 5px;
   }
   .cta-btn {
     flex: 1;
     width: auto;
     max-width: none;
-    padding: 15px 1px;
-    font-size: 1.2rem;
+    padding: 10px 8px;
+    font-size: 0.75rem;
     white-space: nowrap;
-    border-radius: 12px;
+    border-radius: 10px;
     text-overflow: ellipsis; 
     overflow: hidden;
-    font-weight: 800;
+    font-weight: 600;
   }
   .btn-icon {
      display: none !important;
   }
 
-  /* 2-Column Grid */
+  /* 2-Column Grid - reduced */
   .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 40px; /* Increased padding between blocks */
+    gap: 10px;
     width: 100%;
     flex-grow: 1;
     overflow-y: auto;
-    font-size: 1.4rem; /* Adjusted text size */
-    line-height: 1.2;
+    font-size: 0.8rem;
+    line-height: 1.3;
   }
   .info-card {
-    padding: 30px 5px; 
+    padding: 12px 8px; 
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
   }
   .info-card h3 {
-     font-size: 2.5rem; 
-     margin-bottom: 25px; 
+     font-size: 0.95rem; 
+     margin-bottom: 8px; 
      min-height: auto; 
-     line-height: 1;
+     line-height: 1.2;
      display: flex;
      align-items: center;
      justify-content: center;
      word-break: break-word;
   }
   .info-card li {
-     font-size: 1.4rem; 
-     margin-bottom: 25px; 
+     font-size: 0.75rem; 
+     margin-bottom: 6px; 
      word-break: break-word; 
      hyphens: auto;
   }
