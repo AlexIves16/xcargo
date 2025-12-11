@@ -229,7 +229,7 @@
 import { collection, query, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, where, getDocs, limit, startAfter } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import * as XLSX from 'xlsx';
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 
 const props = defineProps(['triggerAnim'])
@@ -281,15 +281,39 @@ const clearSelection = () => {
 
 const ADMIN_EMAIL = 'kairfakomylife@gmail.com'; 
 
+const currentUser = useState('firebaseUser');
+
+const checkAdminAndLoad = () => {
+    if (!currentUser.value) return; 
+    
+    if (currentUser.value.email === ADMIN_EMAIL) {
+        isAdmin.value = true;
+        
+        // Only load if not already loaded (or if empty)
+        if (tracks.value.length === 0) {
+            resetPagination();
+        }
+    } else {
+        isAdmin.value = false;
+        loading.value = false;
+    }
+};
+
 onMounted(() => {
-  if (!$auth?.currentUser) return;
-  if ($auth.currentUser.email === ADMIN_EMAIL) {
-    isAdmin.value = true;
-    resetPagination();
-  } else {
-     loading.value = false;
-  }
+   if (currentUser.value) {
+       checkAdminAndLoad();
+   }
 });
+
+watch(currentUser, (newVal) => {
+    if (newVal) {
+        checkAdminAndLoad();
+    } else {
+        isAdmin.value = false;
+        tracks.value = [];
+        loading.value = false; // Stop spinner if user logs out
+    }
+}, { immediate: true });
 
 const handleSearch = () => {
     resetPagination();
