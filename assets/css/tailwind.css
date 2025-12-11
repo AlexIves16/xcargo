@@ -2,11 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile Scale Fix */
+/* 
+   Mobile Scale Fix (Proper Method)
+   Instead of 'zoom' which breaks fixed elements, we scale the root font size.
+   Tailwind uses REM units, so this scales EVERYTHING relative to this size.
+   Default is 16px. 
+   12px = 75% scale
+   11px = ~68% scale
+*/
 @media (max-width: 768px) {
     html {
-        /* Zoom out on mobile to fit more content and make elements look "desktop-like" but smaller */
-        zoom: 0.65;
-        /* For browsers that don't support zoom (Firefox), we can try text resizing, but zoom covers 95% of mobile traffic */
+        font-size: 11px;
+        /* Significantly smaller interface */
     }
 }
