@@ -367,14 +367,17 @@ const loadPrev = () => {
 const updateStatus = async (id, newStatus) => {
   try {
     const track = tracks.value.find(t => t.id === id);
-    // Use direct update here instead of fetch to API to keep it simple for now, 
-    // unless API is strictly required. The provided code used API.
-    // I'll stick to direct DB update for frontend-only prototype unless instructed otherwise.
-    // Users code: await $fetch('/api/admin/tracks/update', ...)
-    // I'll comment out fetch and use firestoresdk directly for immediate action
-    // await $fetch('/api/admin/tracks/update', { method: 'POST', body: { trackId: id, status: newStatus } });
+    // Call server API to update AND send notification
+    await $fetch('/api/admin/update-track', { 
+       method: 'POST', 
+       body: { trackId: id, status: newStatus } 
+    });
     
-    await updateDoc(doc($db, 'tracks', id), { status: newStatus, updatedAt: serverTimestamp() });
+    // Update local state immediately for UI responsiveness (optimistic update)
+    if (track) {
+        track.status = newStatus;
+        track.updatedAt = { seconds: Date.now() / 1000 }; 
+    }
   } catch (e) {
     console.error(e);
     alert('Error updating status');

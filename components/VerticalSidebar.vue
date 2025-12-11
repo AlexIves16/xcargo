@@ -340,10 +340,10 @@ For vertical, we either need a new path or rotate the container div 90deg.
   .menu {
     flex-direction: row;
     width: 100%;
-    height: 120px; /* Increased height for larger icons */
+    height: 60px; /* Reduced from 120px (3x smaller = 40px might be too small, trying 60px) */
     padding: 0;
-    border-radius: 30px 30px 0 0; /* Slightly more rounded */
-    font-size: 1.8em; /* 2x size increase (0.9 -> 1.8) */
+    border-radius: 20px 20px 0 0;
+    font-size: 0.7em; /* Reduced from 1.8em */
     pointer-events: auto;
   }
   

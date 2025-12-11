@@ -718,11 +718,19 @@ const getStatusLabel = (status) => {
 @media (max-width: 1024px) {
   .dashboard-main {
     grid-template-columns: 1fr;
+    /* Allow main to scroll if needed, though parent handles it mostly */
+    overflow: visible; 
   }
   .dashboard-content {
      left: 20px;
      width: 90%;
      padding-top: 15vh;
+     padding-bottom: 80px; /* Space for bottom menu */
+     overflow-y: auto; /* Enable scroll */
+     scrollbar-width: none; /* Firefox */
+  }
+  .dashboard-content::-webkit-scrollbar {
+     display: none; /* Chrome/Safari */
   }
 }
 </style>
