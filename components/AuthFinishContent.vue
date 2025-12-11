@@ -113,13 +113,15 @@ const completeSignIn = async (email) => {
     localStorage.removeItem('tempName');
     localStorage.removeItem('tempAvatar');
 
-    // Redirect to Home (Dashboard)
-    // Assuming page.vue handles '/' as home/dashboard state
-    router.push('/'); 
+    // Redirect to Dashboard
+    router.push('/dashboard'); 
 
   } catch (e) {
     console.error('Auth Error:', e);
-    if (e.code === 'auth/invalid-email' || e.code === 'auth/user-mismatch') {
+    if (e.code === 'auth/invalid-action-code') {
+       error.value = 'Ссылка устарела или уже использована. Попробуйте войти заново.';
+       processing.value = false;
+    } else if (e.code === 'auth/invalid-email' || e.code === 'auth/user-mismatch') {
        error.value = t('auth_pages.finish.error_invalid_email');
        waitingForEmail.value = true;
        processing.value = false;

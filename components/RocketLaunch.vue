@@ -202,6 +202,9 @@ $bluewhite: #dafffe;
   display: flex;
   justify-content: center;
   align-items: center;
+  touch-action: manipulation; /* Prevents zoom on double-tap */
+  -webkit-tap-highlight-color: transparent; /* Removes tap highlight */
+  user-select: none; /* Prevents text selection */
 }
 
 .moon-bg {
