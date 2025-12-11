@@ -294,12 +294,10 @@ onMounted(() => {
   .services-content {
     left: 0;
     width: 100%;
-    padding: 95px 10px 140px 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 15px;
+    overflow-y: scroll; /* Enable full page scroll */
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 300px;
+    height: 100vh; /* Ensure full viewport height */
   }
 
   .title-container {
@@ -309,7 +307,21 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 90px; /* Added top padding */
+    padding-top: 15px; /* Reduced since sticky header isn't here, but keeping consistent */
+    margin-top: 80px; /* Space for logo/header */
+  }
+
+  /* Grid */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px; 
+    width: 100%;
+    max-height: none;
+    overflow-y: visible; /* Disable nested scroll */
+    flex-grow: 0;
+    padding-bottom: 20px;
+    height: auto;
   }
 
   .main-title {
@@ -324,18 +336,7 @@ onMounted(() => {
     line-height: 1.2;
   }
 
-  /* Grid */
-  .services-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px; /* Reduced from 40px */
-    width: 100%;
-    max-height: none;
-    overflow-y: auto;
-    flex-grow: 1;
-    padding-bottom: 20px;
-  }
-  .services-grid::-webkit-scrollbar { display: none; }
+
 
   .card {
     padding: 30px 5px;
