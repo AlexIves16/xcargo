@@ -2,6 +2,24 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   compatibilityDate: '2025-12-10',
+
+  // CSP headers for production
+  routeRules: {
+    '/**': {
+      headers: {
+        'Content-Security-Policy': [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com",
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          "font-src 'self' https://fonts.gstatic.com data:",
+          "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com",
+          "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com https://firebaseinstallations.googleapis.com",
+          "frame-src 'self' https://*.firebaseapp.com",
+          "worker-src 'self' blob:",
+        ].join('; ')
+      }
+    }
+  },
   css: ['~/assets/css/tailwind.css'],
   postcss: {
     plugins: {
@@ -9,14 +27,6 @@ export default defineNuxtConfig({
       autoprefixer: {},
     },
   },
-  /* CSP removed temporarily
-  app: {
-    head: {
-      meta: [
-      ]
-    }
-  },
-  */
   runtimeConfig: {
     public: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
