@@ -324,7 +324,12 @@ export default {
             error_timeout: 'Timeout expired',
             error_tg_open: 'Error opening Telegram. Please try again.',
             tab_password: 'Password Login',
-            tab_link: 'Link Login'
+            tab_link: 'Link Login',
+            email_label: 'Email',
+            email_placeholder: 'name@example.com',
+            password_label: 'Password',
+            submit_btn: 'Login',
+            back_btn: 'Back'
         },
         email: {
             title: 'EMAIL LOGIN',

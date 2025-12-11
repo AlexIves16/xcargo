@@ -256,7 +256,12 @@ export default {
             error_tg_open: 'Telegram ашу қатесі. Қайталап көріңіз.',
 
             tab_password: 'Құпия сөзбен кіру',
-            tab_link: 'Сілтеме арқылы кіру'
+            tab_link: 'Сілтеме арқылы кіру',
+            email_label: 'Email',
+            email_placeholder: 'name@example.com',
+            password_label: 'Құпия сөз',
+            submit_btn: 'Кіру',
+            back_btn: 'Артқа'
         },
         email: {
             title: 'EMAIL АРҚЫЛЫ КІРУ',

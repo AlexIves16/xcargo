@@ -14,10 +14,15 @@ export default defineEventHandler(async (event) => {
     let app;
     const apps = getApps();
     let privateKey = config.googlePrivateKey as string;
+    const clientEmail = config.googleClientEmail as string;
 
-    if (!privateKey) {
-        throw new Error('GOOGLE_PRIVATE_KEY is not defined in runtime config');
-    }
+    console.log('[Sync] Starting... Checking config.');
+
+    if (!SPREADSHEET_ID) return { success: false, error: 'Config Missing: SPREADSHEET_ID' };
+    if (!privateKey) return { success: false, error: 'Config Missing: GOOGLE_PRIVATE_KEY' };
+    if (!clientEmail) return { success: false, error: 'Config Missing: GOOGLE_CLIENT_EMAIL' };
+
+    console.log('[Sync] Config keys present. ID:', SPREADSHEET_ID, 'Email:', clientEmail);
 
     // Handle escaped newlines if they exist
     if (privateKey.includes('\\n')) {
@@ -26,26 +31,30 @@ export default defineEventHandler(async (event) => {
 
     if (apps.length === 0) {
         try {
+            console.log('[Sync] Initializing Firebase Admin...');
             app = initializeApp({
                 credential: cert({
                     projectId: config.firebaseProjectId || config.public.firebaseProjectId as string,
-                    clientEmail: config.googleClientEmail as string,
+                    clientEmail: clientEmail,
                     privateKey: privateKey,
                 }),
             });
+            console.log('[Sync] Firebase Admin initialized.');
         } catch (e: any) {
-            console.error('Firebase Init Error:', e);
+            console.error('[Sync] Firebase Init Error:', e);
             throw new Error(`Firebase Init Failed: ${e.message}`);
         }
     } else {
         app = getApp();
+        console.log('[Sync] Reusing existing Firebase Admin app.');
     }
 
     const db = getFirestore(app);
 
     // 2. Initialize Google Sheets Auth
+    console.log('[Sync] Initializing Google JWT Client...');
     const jwtClient = new google.auth.JWT(
-        config.googleClientEmail,
+        clientEmail,
         undefined,
         privateKey,
         ['https://www.googleapis.com/auth/spreadsheets']
@@ -55,6 +64,7 @@ export default defineEventHandler(async (event) => {
 
     try {
         // --- GET SHEET NAME ---
+        console.log('[Sync] Authenticated. Fetching spreadsheet metadata...');
         // Fetch spreadsheet metadata to get the name of the first sheet dynamically
         const meta = await sheets.spreadsheets.get({
             spreadsheetId: SPREADSHEET_ID

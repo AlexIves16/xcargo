@@ -255,7 +255,12 @@ export default {
             error_timeout: '超时',
             error_tg_open: '打开 Telegram 错误。请重试。',
             tab_password: '密码登录',
-            tab_link: '链接登录'
+            tab_link: '链接登录',
+            email_label: '邮箱',
+            email_placeholder: 'name@example.com',
+            password_label: '密码',
+            submit_btn: '登录',
+            back_btn: '返回'
         },
         email: {
             title: 'EMAIL 登录',

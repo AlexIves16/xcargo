@@ -35,16 +35,16 @@
         <!-- Password Login Form -->
         <form v-if="mode === 'password'" @submit.prevent="loginWithPassword" class="auth-form">
             <div class="form-group">
-                <label>Email</label>
-                <input v-model="email" type="email" required class="input-field" placeholder="name@example.com" />
+                <label>{{ t('auth_pages.login.email_label') }}</label>
+                <input v-model="email" type="email" required class="input-field" :placeholder="t('auth_pages.login.email_placeholder')" />
             </div>
             <div class="form-group">
-                <label>Пароль</label>
+                <label>{{ t('auth_pages.login.password_label') }}</label>
                 <input v-model="password" type="password" required class="input-field" placeholder="••••••" />
             </div>
             <button type="submit" :disabled="loading" class="action-btn primary submit-btn">
-                <span v-if="loading">Вход...</span>
-                <span v-else>Войти</span>
+                <span v-if="loading">{{ t('auth_pages.login.loading') }}</span>
+                <span v-else>{{ t('auth_pages.login.submit_btn') }}</span>
             </button>
              <div class="back-link-container">
                <a href="#" @click.prevent="$emit('navigate', 'login')" class="text-blue-400 hover:text-blue-300">

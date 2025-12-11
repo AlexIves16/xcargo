@@ -320,7 +320,12 @@ export default {
             error_timeout: 'Время ожидания истекло',
             error_tg_open: 'Ошибка при открытии Telegram. Попробуйте снова.',
             tab_password: 'Вход по паролю',
-            tab_link: 'Вход по ссылке'
+            tab_link: 'Вход по ссылке',
+            email_label: 'Email',
+            email_placeholder: 'name@example.com',
+            password_label: 'Пароль',
+            submit_btn: 'Войти',
+            back_btn: 'Назад'
         },
         email: {
             title: 'EMAIL ВХОД',
