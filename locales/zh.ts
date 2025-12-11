@@ -253,7 +253,9 @@ export default {
             error_user_cancel: '用户取消登录',
             error_generic: '登录错误。请重试。',
             error_timeout: '超时',
-            error_tg_open: '打开 Telegram 错误。请重试。'
+            error_tg_open: '打开 Telegram 错误。请重试。',
+            tab_password: '密码登录',
+            tab_link: '链接登录'
         },
         email: {
             title: 'EMAIL 登录',

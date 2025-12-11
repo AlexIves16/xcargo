@@ -258,7 +258,9 @@ export default {
         error_telegram: 'Ошибка автоматического входа через Telegram',
         error_timeout: 'Время ожидания истекло. Попробуйте снова.',
         error_open: 'Ошибка при открытии Telegram. Попробуйте снова.',
-        email: 'Войти через Email'
+        email: 'Войти через Email',
+        tab_password: 'Вход по паролю',
+        tab_link: 'Вход по ссылке',
     },
     auth: {
         email_title: 'Вход через Email',

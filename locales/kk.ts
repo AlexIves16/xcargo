@@ -253,7 +253,9 @@ export default {
             error_user_cancel: 'Кіруден бас тартылды',
             error_generic: 'Кіру қатесі. Қайталап көріңіз.',
             error_timeout: 'Уақыт бітті',
-            error_tg_open: 'Telegram ашу қатесі. Қайталап көріңіз.'
+            error_tg_open: 'Telegram ашу қатесі. Қайталап көріңіз.',
+            tab_password: 'Құпия сөзбен кіру',
+            tab_link: 'Сілтеме арқылы кіру'
         },
         email: {
             title: 'EMAIL АРҚЫЛЫ КІРУ',

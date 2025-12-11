@@ -213,7 +213,9 @@ export default {
         error_telegram: 'Telegram auto-login error',
         error_timeout: 'Timeout. Try again.',
         error_open: 'Error opening Telegram. Try again.',
-        email: 'Sign in with Email'
+        email: 'Sign in with Email',
+        tab_password: 'Password Login',
+        tab_link: 'Link Login',
     },
     footer: {
         rights: 'All rights reserved.',
