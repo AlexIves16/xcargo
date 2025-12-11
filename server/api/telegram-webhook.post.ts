@@ -4,6 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { pendingTokens } from '../utils/token-store';
 
 export default defineEventHandler(async (event) => {
+    // Force redeploy: Fix syntax error and retry
     // 1. Log that we received a request AT ALL
     console.log('🔔 Webhook endpoint hit!');
 
