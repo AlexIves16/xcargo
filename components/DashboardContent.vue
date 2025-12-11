@@ -785,5 +785,18 @@ const getStatusLabel = (status) => {
   .dashboard-content::-webkit-scrollbar {
      display: none; /* Chrome/Safari */
   }
+
+  .list-panel {
+      min-height: auto; /* Allow full expansion */
+      overflow: visible; /* Show all items */
+      height: auto;
+  }
+
+  .tracks-list {
+      overflow-y: visible; /* Disable internal scroll */
+      flex: none; /* Don't try to fill, just be */
+      height: auto;
+      max-height: none;
+  }
 }
 </style>

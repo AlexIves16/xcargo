@@ -46,7 +46,7 @@ export default defineNuxtConfig({
   },
   modules: ['nuxt-turnstile'],
   turnstile: {
-    siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '',
+    siteKey: '0x4AAAAAACCekjF3mSEvD-2s',
   },
   runtimeConfig: {
     // Server-only config (auto-populated by NUXT_TELEGRAM_BOT_TOKEN, etc.)
