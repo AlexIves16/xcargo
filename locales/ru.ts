@@ -259,8 +259,6 @@ export default {
         error_timeout: 'Время ожидания истекло. Попробуйте снова.',
         error_open: 'Ошибка при открытии Telegram. Попробуйте снова.',
         email: 'Войти через Email',
-        tab_password: 'Вход по паролю',
-        tab_link: 'Вход по ссылке',
     },
     auth: {
         email_title: 'Вход через Email',
@@ -320,7 +318,9 @@ export default {
             error_user_cancel: 'Вход отменен пользователем',
             error_generic: 'Ошибка входа. Попробуйте снова.',
             error_timeout: 'Время ожидания истекло',
-            error_tg_open: 'Ошибка при открытии Telegram. Попробуйте снова.'
+            error_tg_open: 'Ошибка при открытии Telegram. Попробуйте снова.',
+            tab_password: 'Вход по паролю',
+            tab_link: 'Вход по ссылке'
         },
         email: {
             title: 'EMAIL ВХОД',

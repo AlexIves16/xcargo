@@ -440,9 +440,20 @@ const archiveOldTracks = async () => {
 const syncWithSheets = async () => {
     syncing.value = true;
     try {
-        // Placeholder for API
-        alert('API endpoint /api/sync/sheets not implemented in this demo.');
-    } catch (e) { console.error(e); }
+        const res = await $fetch('/api/sync/sheets', { method: 'POST' });
+        if (res.success) {
+            alert(t('admin.upload_complete')
+                .replace('{updated}', res.stats.updatedInDb + res.stats.updatedInSheet)
+                .replace('{created}', res.stats.addedToDb + res.stats.addedToSheet)
+                .replace('{errors}', '0'));
+            resetPagination();
+        } else {
+            alert('Sync Failed: ' + res.error);
+        }
+    } catch (e) { 
+        console.error(e);
+        alert('Sync Error: ' + e.message);
+    }
     finally { syncing.value = false; }
 };
 

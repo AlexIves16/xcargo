@@ -16,6 +16,12 @@ export default defineNuxtPlugin((nuxtApp) => {
     measurementId: config.public.firebaseMeasurementId
   };
 
+  console.log('🔥 Firebase Config Loaded:', {
+    apiKey: firebaseConfig.apiKey ? 'Present' : 'MISSING',
+    senderId: firebaseConfig.messagingSenderId ? 'Present' : 'MISSING',
+    projectId: firebaseConfig.projectId ? 'Present' : 'MISSING'
+  });
+
   if (!firebaseConfig.apiKey) {
     console.warn("⚠️ Firebase API Key missing. Running in UI-only mode.");
     return {

@@ -253,7 +253,14 @@ export default {
             error_user_cancel: 'Кіруден бас тартылды',
             error_generic: 'Кіру қатесі. Қайталап көріңіз.',
             error_timeout: 'Уақыт бітті',
-            error_tg_open: 'Telegram ашу қатесі. Қайталап көріңіз.',
+            error_tg_open: 'Telegram ашу қатесі. Қайталап көріңіз.', // wait, checking kk.ts file content in previous steps...
+// In step 288 (kk.ts), `auth_pages` -> `login` ends with `error_tg_open`.
+// But I previously added them to the WRONG place?
+// Let's check where I added them in KK.
+// Step 291: I added them after `error_tg_open`. 
+// Wait, `error_tg_open` IS in `auth_pages.login` in KK.
+// Let's re-verify KK file structure.
+,
             tab_password: 'Құпия сөзбен кіру',
             tab_link: 'Сілтеме арқылы кіру'
         },

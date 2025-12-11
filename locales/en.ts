@@ -214,8 +214,6 @@ export default {
         error_timeout: 'Timeout. Try again.',
         error_open: 'Error opening Telegram. Try again.',
         email: 'Sign in with Email',
-        tab_password: 'Password Login',
-        tab_link: 'Link Login',
     },
     footer: {
         rights: 'All rights reserved.',
@@ -324,7 +322,9 @@ export default {
             error_user_cancel: 'Login cancelled by user',
             error_generic: 'Login error. Please try again.',
             error_timeout: 'Timeout expired',
-            error_tg_open: 'Error opening Telegram. Please try again.'
+            error_tg_open: 'Error opening Telegram. Please try again.',
+            tab_password: 'Password Login',
+            tab_link: 'Link Login'
         },
         email: {
             title: 'EMAIL LOGIN',
