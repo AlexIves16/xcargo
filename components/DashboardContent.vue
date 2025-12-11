@@ -1,0 +1,640 @@
+<template>
+  <div class="dashboard-content">
+    
+    <!-- Header Section -->
+    <div class="header-section">
+      <div class="user-profile">
+        <div class="avatar-ring">
+          <img 
+            :src="userPhoto || '/logo.png'" 
+            :alt="userName"
+            class="user-avatar"
+          />
+        </div>
+        <div class="user-info">
+          <p class="welcome-text">{{ t('dashboard.welcome') }}</p>
+          <h1 class="user-name" :data-text="userName">{{ userName }}</h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Notification Toggle -->
+        <button 
+          @click="enableNotifications" 
+          class="icon-btn"
+          :title="t('dashboard.enable_notifications')"
+        >
+          <span class="icon">🔔</span>
+        </button>
+
+        <!-- Admin Link -->
+        <button 
+          v-if="isAdmin" 
+          @click="$emit('navigate', 'admin')" 
+          class="icon-btn admin-btn"
+          :title="t('dashboard.admin_panel')"
+        >
+          <span class="icon">⚡</span>
+        </button>
+
+        <!-- Logout -->
+        <button @click="logout" class="icon-btn logout-btn" :title="t('nav.logout')">
+          <span class="icon">🚪</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tracks.length }}</span>
+          <span class="stat-label">Всего посылок</span>
+        </div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">🚚</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tracks.filter(t => t.status === 'in_transit').length }}</span>
+          <span class="stat-label">В пути</span>
+        </div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tracks.filter(t => t.status === 'delivered').length }}</span>
+          <span class="stat-label">Доставлено</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area (Split View) -->
+    <div class="dashboard-main">
+      
+      <!-- Add Track Section -->
+      <div class="glass-panel add-track-panel">
+        <h2 class="panel-title">{{ t('dashboard.add_track') }}</h2>
+        <div class="input-group">
+          <input 
+            v-model="newTrackNumber" 
+            type="text" 
+            :placeholder="t('dashboard.placeholder_track') + ' *'" 
+            class="glass-input"
+          />
+          <input 
+            v-model="newTrackDescription" 
+            type="text" 
+            :placeholder="t('dashboard.placeholder_desc')" 
+            class="glass-input"
+            @keyup.enter="addTrackNumber"
+          />
+          <button 
+            @click="addTrackNumber" 
+            :disabled="!newTrackNumber || loading"
+            class="action-btn"
+          >
+            {{ loading ? t('dashboard.adding') : t('dashboard.add_btn') }}
+          </button>
+        </div>
+        <p v-if="error" class="error-msg">{{ error }}</p>
+      </div>
+
+      <!-- Parcels List -->
+      <div class="glass-panel list-panel">
+        <h2 class="panel-title">{{ t('dashboard.my_parcels') }}</h2>
+        
+        <div v-if="loadingData" class="loading-state">
+          <div class="spinner"></div>
+          <p>{{ t('dashboard.loading') }}</p>
+        </div>
+
+        <div v-else-if="tracks.length === 0" class="empty-state">
+          <span class="empty-icon">📭</span>
+          <p>{{ t('dashboard.no_parcels') }}</p>
+        </div>
+
+        <div v-else class="tracks-list">
+          <div v-for="track in tracks" :key="track.id" class="track-item">
+            <div class="track-info">
+              <div class="track-header">
+                <span class="track-number">{{ track.number }}</span>
+                <span v-if="track.description" class="track-desc-badge">{{ track.description }}</span>
+              </div>
+              <span class="track-date">{{ t('dashboard.added') }} {{ formatDate(track.createdAt) }}</span>
+            </div>
+            
+            <div class="track-actions">
+              <span :class="['status-badge', track.status]">
+                {{ getStatusLabel(track.status) }}
+              </span>
+              <button @click="deleteTrack(track.id)" class="delete-btn" title="Удалить">
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore'
+import { getMessaging, getToken } from 'firebase/messaging'
+import { signOut } from 'firebase/auth'
+import { useI18n } from '@/composables/useI18n'
+
+const props = defineProps({
+  triggerAnim: {
+    type: Boolean,
+    default: false
+  }
+})
+const emit = defineEmits(['navigate'])
+
+const { $db, $auth } = useNuxtApp()
+const { t } = useI18n()
+
+const newTrackNumber = ref('')
+const newTrackDescription = ref('')
+const tracks = ref([])
+const loading = ref(false)
+const loadingData = ref(true)
+const error = ref('')
+
+const isAdmin = computed(() => {
+  const currentUser = $auth?.currentUser
+  if (!currentUser) return false
+  return currentUser.email === 'kairfakomylife@gmail.com'
+})
+
+const userName = computed(() => {
+  const currentUser = $auth?.currentUser
+  if (!currentUser) return 'Пользователь'
+  return currentUser.displayName || currentUser.email?.split('@')[0] || 'Пользователь'
+})
+
+const userPhoto = computed(() => {
+  const currentUser = $auth?.currentUser
+  return currentUser?.photoURL || null
+})
+
+onMounted(() => {
+  if (!$auth?.currentUser) return
+
+  const q = query(
+    collection($db, 'tracks'),
+    where('userId', '==', $auth.currentUser.uid),
+    orderBy('createdAt', 'desc')
+  )
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    tracks.value = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+    loadingData.value = false
+  }, (err) => {
+    console.error("Error fetching tracks:", err)
+    error.value = "Ошибка загрузки данных."
+    loadingData.value = false
+  })
+
+  onUnmounted(() => unsubscribe())
+})
+
+const enableNotifications = async () => {
+  try {
+    const messaging = getMessaging()
+    const permission = await Notification.requestPermission()
+    
+    if (permission === 'granted') {
+      const token = await getToken(messaging)
+      if (token) {
+        const userRef = doc($db, 'users', $auth.currentUser.uid)
+        await updateDoc(userRef, {
+            fcmTokens: arrayUnion(token)
+        }).catch(async (e) => {
+             if (e.code === 'not-found') {
+                 await setDoc(userRef, { 
+                    email: $auth.currentUser.email,
+                    fcmTokens: [token] 
+                 }, { merge: true })
+             }
+        })
+        alert(t('dashboard.notifications_enabled'))
+      }
+    }
+  } catch (e) {
+    console.error('Notification error:', e)
+    alert(t('dashboard.notifications_error'))
+  }
+}
+
+const addTrackNumber = async () => {
+  if (!newTrackNumber.value.trim()) return
+  
+  loading.value = true
+  error.value = ''
+
+  try {
+    await addDoc(collection($db, 'tracks'), {
+      number: newTrackNumber.value.trim(),
+      description: newTrackDescription.value.trim(),
+      userId: $auth.currentUser.uid,
+      userEmail: $auth.currentUser.email,
+      userName: $auth.currentUser.displayName || 'Пользователь',
+      createdAt: serverTimestamp(),
+      status: 'pending'
+    })
+    newTrackNumber.value = ''
+    newTrackDescription.value = ''
+  } catch (e) {
+    console.error("Error adding track:", e)
+    error.value = 'Не удалось добавить трек-номер.'
+  } finally {
+    loading.value = false
+  }
+}
+
+const deleteTrack = async (id) => {
+  if (!confirm(t('dashboard.confirm_delete'))) return
+  try {
+    await deleteDoc(doc($db, 'tracks', id))
+  } catch (e) {
+    console.error("Error deleting track:", e)
+    alert(t('dashboard.error_delete') || 'Error')
+  }
+}
+
+const logout = async () => {
+  await signOut($auth)
+  emit('navigate', 'home') 
+  if (typeof window !== 'undefined') window.location.reload() 
+}
+
+const formatDate = (timestamp) => {
+  if (!timestamp) return ''
+  return new Date(timestamp.seconds * 1000).toLocaleDateString('ru-RU')
+}
+
+const getStatusLabel = (status) => {
+  return t('status.' + status)
+}
+</script>
+
+<style scoped>
+.dashboard-content {
+  position: absolute;
+  top: 0;
+  left: 100px;
+  width: calc(100vw - 120px - 20vw);
+  height: 100vh;
+  padding: 15vh 40px 40px 40px;
+  overflow-y: auto;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  pointer-events: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+/* Header */
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatar-ring {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, #4F46E5, #06B6D4);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+}
+
+.user-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #000;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-text {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.user-name {
+  font-family: helvetica, arial, sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  background: linear-gradient(90deg, #fff, #c7d2fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.header-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.admin-btn:hover {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+.icon {
+  font-size: 1.2rem;
+}
+
+/* Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  backdrop-filter: blur(5px);
+}
+
+.stat-card.blue {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.stat-card.green {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.stat-icon {
+  font-size: 2rem;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: white;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+/* Dashboard Main */
+.dashboard-main {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 30px;
+}
+
+/* Panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.panel-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+  color: #e2e8f0;
+}
+
+/* Add Track Form */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.glass-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.glass-input:focus {
+  border-color: #818CF8;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #4F46E5, #2563EB);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  color: #ef4444;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+/* List */
+.tracks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.track-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.track-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.track-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.track-number {
+  font-weight: 600;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.track-desc-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.track-date {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.track-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-badge.pending { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+.status-badge.in_transit { background: rgba(96, 165, 250, 0.2); color: #60a5fa; }
+.status-badge.arrived { background: rgba(167, 139, 250, 0.2); color: #a78bfa; }
+.status-badge.delivered { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+.status-badge.lost { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
+  transition: color 0.2s;
+}
+
+.delete-btn:hover {
+  color: #ef4444;
+}
+
+.loading-state, .empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+.spinner {
+  margin: 0 auto 15px;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: #4F46E5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-main {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-content {
+     left: 20px;
+     width: 90%;
+     padding-top: 15vh;
+  }
+}
+</style>
