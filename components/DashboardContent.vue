@@ -721,11 +721,38 @@ const getStatusLabel = (status) => {
     /* Allow main to scroll if needed, though parent handles it mostly */
     overflow: visible; 
   }
+  
+  /* Stats Grid Single Row on Mobile */
+  .stats-grid {
+      grid-template-columns: repeat(3, 1fr); /* Force 3 columns in one row */
+      gap: 10px; /* Smaller gap */
+  }
+  
+  .stat-card {
+      padding: 10px; /* Reduced padding */
+      flex-direction: column; /* Stack icon and info vertically to save width */
+      text-align: center;
+      gap: 5px;
+  }
+  
+  .stat-icon {
+      font-size: 1.5rem; /* Smaller icon */
+  }
+  
+  .stat-value {
+      font-size: 1.2rem;
+  }
+  
+  .stat-label {
+      font-size: 0.7rem;
+      white-space: nowrap; /* Prevent wrapping if possible */
+  }
+
   .dashboard-content {
      left: 20px;
      width: 90%;
      padding-top: 15vh;
-     padding-bottom: 80px; /* Space for bottom menu */
+     padding-bottom: 150px; /* Increased space for bottom menu visibility */
      overflow-y: auto; /* Enable scroll */
      scrollbar-width: none; /* Firefox */
   }

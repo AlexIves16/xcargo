@@ -26,6 +26,11 @@
             {{ loading ? t('search.loading') : t('search.button') }}
           </button>
         </div>
+        
+        <!-- CAPTCHA -->
+        <div class="captcha-wrapper">
+            <NuxtTurnstile v-model="captchaToken" class="turnstile-widget" />
+        </div>
       </div>
 
       <!-- Results Section -->
@@ -42,17 +47,10 @@
               <span class="label">{{ t('search.desc') }}:</span>
               <span class="value">{{ track.description }}</span>
             </div>
-            <div v-if="track.sentAt" class="detail-row">
-              <span class="label">{{ t('search.sent') }}:</span>
-              <span class="value">{{ track.sentAt }}</span>
-            </div>
-            <div v-if="track.arrivedAt" class="detail-row">
-              <span class="label">{{ t('search.arrived') }}:</span>
-              <span class="value">{{ formatDate(track.arrivedAt) }}</span>
-            </div>
-            <div v-if="track.batchNumber" class="detail-row">
-              <span class="label">{{ t('search.batch') }}:</span>
-              <span class="value">{{ track.batchNumber }}</span>
+            <!-- Additional details can go here -->
+             <div v-if="track.updatedAt" class="detail-row">
+              <span class="label">Обновлено:</span>
+              <span class="value">{{ formatDate(track.updatedAt) }}</span>
             </div>
           </div>
         </div>
@@ -69,7 +67,6 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { collection, query, where, getDocs } from 'firebase/firestore'
 import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps({
@@ -84,10 +81,8 @@ const trackingNumber = ref('')
 const results = ref([])
 const searched = ref(false)
 const loading = ref(false)
+const captchaToken = ref('') // Token from Turnstile
 const { t } = useI18n()
-
-// Use Nuxt App for DB
-const { $db } = useNuxtApp()
 
 // Animation Trigger
 watch(() => props.triggerAnim, (val) => {
@@ -106,21 +101,37 @@ onMounted(() => {
 async function searchByTrackingNumber() {
   if (!trackingNumber.value.trim()) return
   
+  // Check CAPTCHA
+  if (!captchaToken.value) {
+      alert('Пожалуйста, пройдите проверку (CAPTCHA)')
+      return
+  }
+  
   loading.value = true
   searched.value = false
   results.value = []
 
   try {
-    const q = query(
-      collection($db, 'tracks'), 
-      where('number', '==', trackingNumber.value.trim())
-    )
+    // Call Server API with Token
+    const response = await $fetch('/api/track', {
+        method: 'POST',
+        body: {
+            trackingNumber: trackingNumber.value.trim(),
+            token: captchaToken.value
+        }
+    })
     
-    const querySnapshot = await getDocs(q)
-    results.value = querySnapshot.docs.map(doc => doc.data())
+    if (response.found) {
+        results.value = response.results
+    }
     searched.value = true
   } catch (error) {
     console.error("Error search:", error)
+    if (error.statusCode === 403) {
+        alert('Ошибка проверки CAPTCHA. Обновите страницу.')
+    } else {
+        alert('Ошибка поиска.')
+    }
     searched.value = true
   } finally {
     loading.value = false
@@ -138,12 +149,9 @@ const getStatusClass = (status) => {
   return map[status] || ''
 }
 
-const formatDate = (timestamp) => {
-  if (!timestamp) return ''
-  if (timestamp.seconds) {
-    return new Date(timestamp.seconds * 1000).toLocaleDateString('ru-RU')
-  }
-  return new Date(timestamp).toLocaleDateString('ru-RU')
+const formatDate = (val) => {
+  if (!val) return ''
+  return new Date(val).toLocaleDateString('ru-RU')
 }
 </script>
 
