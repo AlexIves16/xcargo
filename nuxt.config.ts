@@ -6,6 +6,9 @@ export default defineNuxtConfig({
   // Proper viewport for mobile + PWA
   app: {
     head: {
+      script: [
+        { src: 'https://www.google.com/recaptcha/api.js', async: true, defer: true }
+      ],
       viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
       meta: [
         { name: 'theme-color', content: '#4F46E5' },
@@ -26,12 +29,12 @@ export default defineNuxtConfig({
       headers: {
         'Content-Security-Policy': [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://api-maps.yandex.ru https://yandex.ru",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://api-maps.yandex.ru https://yandex.ru https://www.google.com",
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://yandex.ru",
           "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:",
           "img-src 'self' data: blob: https: http:",
-          "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com https://firebaseinstallations.googleapis.com https://cdnjs.cloudflare.com https://api-maps.yandex.ru https://yandex.ru https://fcmregistrations.googleapis.com",
-          "frame-src 'self' https://*.firebaseapp.com https://yandex.kz https://yandex.ru https://*.yandex.kz https://*.yandex.ru",
+          "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://xcargo-4853b.firebaseapp.com https://firestore.googleapis.com https://www.google-analytics.com https://firebaseinstallations.googleapis.com https://cdnjs.cloudflare.com https://api-maps.yandex.ru https://yandex.ru https://fcmregistrations.googleapis.com https://www.google.com",
+          "frame-src 'self' https://*.firebaseapp.com https://yandex.kz https://yandex.ru https://*.yandex.kz https://*.yandex.ru https://www.google.com",
           "worker-src 'self' blob:",
         ].join('; ')
       }
@@ -44,20 +47,16 @@ export default defineNuxtConfig({
       autoprefixer: {},
     },
   },
-  modules: ['nuxt-turnstile'],
-  turnstile: {
-    siteKey: '0x4AAAAAACCekjF3mSEvD-2s',
-  },
+  modules: [],
   runtimeConfig: {
-    // Server-only config (auto-populated by NUXT_TELEGRAM_BOT_TOKEN, etc.)
+    // Server-only config
     telegramBotToken: '',
     googleClientEmail: '',
     googlePrivateKey: '',
     spreadsheetId: '',
-    turnstileSecretKey: '', /* NUXT_TURNSTILE_SECRET_KEY */
+    recaptchaSecretKey: '', /* NUXT_RECAPTCHA_SECRET_KEY */
 
     public: {
-      // Auto-populated by NUXT_PUBLIC_FIREBASE_API_KEY, etc.
       firebaseApiKey: '',
       firebaseAuthDomain: '',
       firebaseProjectId: '',
@@ -67,8 +66,7 @@ export default defineNuxtConfig({
       firebaseMeasurementId: '',
       telegramBotName: '',
       spreadsheetId: '',
-      // turnstileSiteKey is handled by the module options above usually, but keeping for ref if needed
-      turnstileSiteKey: '',
+      recaptchaSiteKey: '6Lfz2CgsAAAAAPR2EmOnpqMQty5Gp2ZoS4nSV896',
       firebaseVapidKey: 'BO91snwciBEECru5uzrbeRLjlgWf878kyNdiU6xDSFB3a3AQ1CCsMCQp3Rod4-SGIUIORH6S8TOcTL6i054vdGI',
     }
   },

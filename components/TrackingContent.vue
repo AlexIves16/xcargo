@@ -29,7 +29,13 @@
         
         <!-- CAPTCHA -->
         <div class="captcha-wrapper">
-            <NuxtTurnstile v-model="captchaToken" site-key="0x4AAAAAACCekjF3mSEvD-2s" class="turnstile-widget" />
+             <ClientOnly>
+                <GoogleRecaptcha 
+                    :site-key="siteKey" 
+                    @verify="onCaptchaVerify" 
+                    @expire="onCaptchaExpire"
+                />
+             </ClientOnly>
         </div>
       </div>
 
@@ -47,7 +53,6 @@
               <span class="label">{{ t('search.desc') }}:</span>
               <span class="value">{{ track.description }}</span>
             </div>
-            <!-- Additional details can go here -->
              <div v-if="track.updatedAt" class="detail-row">
               <span class="label">Обновлено:</span>
               <span class="value">{{ formatDate(track.updatedAt) }}</span>
@@ -68,6 +73,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import GoogleRecaptcha from './GoogleRecaptcha.vue'
 
 const props = defineProps({
   triggerAnim: {
@@ -81,20 +87,22 @@ const trackingNumber = ref('')
 const results = ref([])
 const searched = ref(false)
 const loading = ref(false)
-const captchaToken = ref('') // Token from Turnstile
+const captchaToken = ref('')
 const { t } = useI18n()
+const config = useRuntimeConfig()
+const siteKey = config.public.recaptchaSiteKey || '6Lfz2CgsAAAAAPR2EmOnpqMQty5Gp2ZoS4nSV896'
+
+const onCaptchaVerify = (token) => {
+    captchaToken.value = token
+}
+
+const onCaptchaExpire = () => {
+    captchaToken.value = ''
+}
 
 // Animation Trigger
 watch(() => props.triggerAnim, (val) => {
-  if (val) {
-    setTimeout(() => { showContent.value = true }, 100)
-  }
-})
-
-onMounted(() => {
-  if (props.triggerAnim) {
-    setTimeout(() => { showContent.value = true }, 100)
-  }
+// ...
 })
 
 // Search Logic
@@ -103,9 +111,12 @@ async function searchByTrackingNumber() {
   
   // Check CAPTCHA
   if (!captchaToken.value) {
-      alert('Пожалуйста, пройдите проверку (CAPTCHA)')
+      alert('Пожалуйста, подтвердите, что вы не робот (CAPTCHA)')
       return
   }
+  
+  // ...
+
   
   loading.value = true
   searched.value = false

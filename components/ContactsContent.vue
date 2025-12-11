@@ -315,7 +315,11 @@ onMounted(() => {
   .contacts-content {
     left: 0;
     width: 100%;
-    padding: 95px 10px 140px 10px;
+    overflow-y: scroll; /* Enable full page scroll */
+    -webkit-overflow-scrolling: touch;
+    height: 100vh;
+    padding-top: 95px;
+    padding-bottom: 300px; /* Ample bottom space */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -330,16 +334,17 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 90px;
+    padding-top: 15px; /* Reduced since sticky header isn't here */
+    margin-top: 80px;
   }
 
   .main-title {
-    font-size: 4.3rem; /* Consistent with others */
+    font-size: 4.3rem; 
     line-height: 1;
   }
 
   .subtitle {
-    font-size: 1.6rem; /* Consistent with others */
+    font-size: 1.6rem; 
     padding: 24px;
     margin: 0;
     line-height: 1.2;
@@ -348,7 +353,7 @@ onMounted(() => {
   .content-body {
     width: 100%;
     height: auto;
-    overflow-y: auto;
+    overflow-y: visible; /* No nested scroll */
     padding-right: 0;
   }
   .content-body::-webkit-scrollbar { display: none; }

@@ -794,41 +794,38 @@ const getStatusLabel = (status) => {
   .dashboard-content {
      left: 0; 
      width: 100%;
-     padding-top: 15px; /* Less top padding since header is sticky */
-     padding-bottom: 300px; /* More bottom space for scroll */
-     overflow-y: scroll; /* Force scrolling container */
-     -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+     padding-top: 190px; /* 100px (Site Header) + 80px (Dash Header) + 10px Gap */
+     padding-bottom: 300px;
+     padding-left: 20px;
+     padding-right: 20px;
+     overflow-y: scroll; 
+     -webkit-overflow-scrolling: touch; 
   }
 
-  /* Sticky Header */
+  /* Fixed Header - Positioned BELOW site header */
   .header-section {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(15, 23, 42, 0.85); /* Dark background to hide scroll content */
-      backdrop-filter: blur(15px);
-      margin: -15px -40px 10px -40px; /* Negative margin to span full width */
-      padding: 15px 40px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-
-  /* Sticky Stats (Optional: user didn't ask, but good UX. Or maybe not if space is tight. User asked for Profile & Add Track) */
-  /* User said "Profile ... Add Track too". Stats are in between? 
-     Actually structure is Header -> Stats -> Main(AddTrack, List). 
-     If we make AddTrack sticky, we scroll past stats? 
-     Let's Keep Header Sticky. 
-     Make Add Track Sticky? It's below stats. 
-     If Add Track is sticky, it will stick to top (under header) when stats scroll off.
-  */
-
-  .add-track-panel {
-      position: sticky;
-      top: 85px; /* Below header */
-      z-index: 40;
+      position: fixed;
+      top: 100px; /* Push down below main WavesHeader */
+      left: 0;
+      width: 100%;
+      height: 80px;
+      z-index: 100;
       background: rgba(15, 23, 42, 0.95);
       backdrop-filter: blur(15px);
+      margin: 0;
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  }
+
+  /* Make Add Track Normal Flow */
+  .add-track-panel {
+      position: relative;
+      top: auto;
+      z-index: 1;
       margin-bottom: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   }
 
   /* Reset other panels */
