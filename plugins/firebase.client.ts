@@ -50,12 +50,37 @@ export default defineNuxtPlugin((nuxtApp) => {
       }
     });
 
+    // Initial check from localStorage (Optimistic Auth)
+    const cachedUser = localStorage.getItem('user_cache')
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser)
+        // Restore minimal user for UI
+        const firebaseUser = useState('firebaseUser')
+        firebaseUser.value = parsed
+        console.log('⚡ Restored user from localStorage:', parsed.email)
+      } catch (e) {
+        console.error('Error parsing user cache', e)
+      }
+    }
+
     onAuthStateChanged(auth, async (user) => {
       // Update global reactive state
       const firebaseUser = useState('firebaseUser')
       firebaseUser.value = user
 
       if (user) {
+        // Cache user details for next refresh
+        const userForCache = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          // Store minimal needed for Admin check
+          emailVerified: user.emailVerified
+        }
+        localStorage.setItem('user_cache', JSON.stringify(userForCache))
+
         // Check if running in PWA (Standalone) mode
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
 
@@ -74,6 +99,9 @@ export default defineNuxtPlugin((nuxtApp) => {
             }
           }
         }
+      } else {
+        // User logged out
+        localStorage.removeItem('user_cache')
       }
     });
   }

@@ -210,7 +210,7 @@ const fetchData = () => {
     return unsubscribe
 }
 
-let unsub: (() => void) | null = null
+let unsub = null
 
 onMounted(() => {
   if (currentUser.value) {
