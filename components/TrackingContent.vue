@@ -107,7 +107,7 @@ watch(() => props.triggerAnim, (val) => {
       showContent.value = true
     }, 100)
   }
-})
+}, { immediate: true })
 
 // Search Logic
 async function searchByTrackingNumber() {

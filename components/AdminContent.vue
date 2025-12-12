@@ -246,6 +246,7 @@ const syncing = ref(false);
 const archiving = ref(false);
 const chinaInput = ref(null);
 const receivedInput = ref(null);
+const unsubscribe = ref(null);
 
 const pageSize = ref(50);
 const pageHistory = ref([]); 
@@ -281,50 +282,7 @@ const clearSelection = () => {
 
 const ADMIN_EMAIL = 'kairfakomylife@gmail.com'; 
 
-const currentUser = useState('firebaseUser');
 
-const checkAdminAndLoad = () => {
-    if (!currentUser.value) return; 
-    
-    if (currentUser.value.email === ADMIN_EMAIL) {
-        isAdmin.value = true;
-        
-        // Only load if not already loaded (or if empty)
-        if (tracks.value.length === 0) {
-            resetPagination();
-        }
-    } else {
-        isAdmin.value = false;
-        loading.value = false;
-    }
-};
-
-onMounted(() => {
-   if (currentUser.value) {
-       checkAdminAndLoad();
-   }
-});
-
-watch(currentUser, (newVal) => {
-    if (newVal) {
-        checkAdminAndLoad();
-    } else {
-        isAdmin.value = false;
-        // Unsubscribe if user logs out
-        if (unsubscribe.value) {
-            unsubscribe.value();
-            unsubscribe.value = null;
-        }
-        tracks.value = [];
-        loading.value = false; // Stop spinner if user logs out
-    }
-}, { immediate: true });
-
-onUnmounted(() => {
-    if (unsubscribe.value) {
-        unsubscribe.value();
-    }
-});
 
 const handleSearch = () => {
     resetPagination();
@@ -338,7 +296,7 @@ const resetPagination = () => {
     loadTracks();
 };
 
-const unsubscribe = ref(null);
+
 
 const loadTracks = (cursor = null) => {
   // If there is an active listener, unsubscribe first
@@ -551,6 +509,51 @@ const logout = async () => {
   await signOut($auth);
   emit('navigate', 'home');
 };
+
+const currentUser = useState('firebaseUser');
+
+const checkAdminAndLoad = () => {
+    if (!currentUser.value) return; 
+    
+    if (currentUser.value.email === ADMIN_EMAIL) {
+        isAdmin.value = true;
+        
+        // Only load if not already loaded (or if empty)
+        if (tracks.value.length === 0) {
+            resetPagination();
+        }
+    } else {
+        isAdmin.value = false;
+        loading.value = false;
+    }
+};
+
+onMounted(() => {
+   if (currentUser.value) {
+       checkAdminAndLoad();
+   }
+});
+
+watch(currentUser, (newVal) => {
+    if (newVal) {
+        checkAdminAndLoad();
+    } else {
+        isAdmin.value = false;
+        // Unsubscribe if user logs out
+        if (unsubscribe.value) {
+            unsubscribe.value();
+            unsubscribe.value = null;
+        }
+        tracks.value = [];
+        loading.value = false; // Stop spinner if user logs out
+    }
+}, { immediate: true });
+
+onUnmounted(() => {
+    if (unsubscribe.value) {
+        unsubscribe.value();
+    }
+});
 </script>
 
 <style scoped>
