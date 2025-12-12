@@ -401,6 +401,15 @@ const formatDate = (timestamp) => {
 const getStatusLabel = (status) => {
   return t('status.' + status)
 }
+
+const getStatusColor = (status) => {
+    if (!status) return 'gray';
+    const s = status.toLowerCase();
+    if (s.includes('прибыл') || s.includes('arrived') || s.includes('склад')) return 'green';
+    if (s.includes('пути') || s.includes('transit') || s.includes('отправлен')) return 'blue';
+    if (s.includes('выдан') || s.includes('delivered')) return 'purple';
+    return 'gray';
+}
 </script>
 
 <style scoped>
@@ -730,17 +739,32 @@ const getStatusLabel = (status) => {
 }
 
 .status-badge {
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 500;
+  display: inline-block;
+  margin-top: 2px;
 }
 
-.status-badge.pending { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-.status-badge.in_transit { background: rgba(96, 165, 250, 0.2); color: #60a5fa; }
-.status-badge.arrived { background: rgba(167, 139, 250, 0.2); color: #a78bfa; }
-.status-badge.delivered { background: rgba(52, 211, 153, 0.2); color: #34d399; }
-.status-badge.lost { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+.status-badge.gray { background: rgba(255, 255, 255, 0.1); color: #cbd5e1; }
+.status-badge.green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.status-badge.blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.status-badge.purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+
+.status-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
 
 .delete-btn {
   background: none;
@@ -748,6 +772,9 @@ const getStatusLabel = (status) => {
   color: #94a3b8;
   cursor: pointer;
   font-size: 1.2rem;
+  padding: 5px;
+  transition: color 0.2s;
+}
   padding: 5px;
   transition: color 0.2s;
 }
