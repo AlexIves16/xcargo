@@ -915,51 +915,5 @@ const getStatusLabel = (status) => {
 }
 .mobile-only { display: none; }
 
-  /* Fixed Header - Positioned BELOW site header */
-  .header-section {
-      position: fixed;
-      top: 100px; /* Push down below main WavesHeader */
-      left: 0;
-      width: 100%;
-      height: 80px;
-      z-index: 100;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(15px);
-      margin: 0;
-      padding: 10px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-  }
 
-  /* Make Add Track Normal Flow */
-  .add-track-panel {
-      position: relative;
-      top: auto;
-      z-index: 1;
-      margin-bottom: 20px;
-  }
-
-  /* Reset other panels */
-  .stats-grid { margin-top: 0; }
-  
-  .dashboard-content::-webkit-scrollbar {
-     display: none; /* Chrome/Safari */
-  }
-
-
-  .list-panel {
-      min-height: auto; /* Allow full expansion */
-      overflow: visible; /* Show all items */
-      height: auto;
-  }
-
-  .tracks-list {
-      overflow-y: visible; /* Disable internal scroll */
-      flex: none; /* Don't try to fill, just be */
-      height: auto;
-      max-height: none;
-  }
-}
 </style>
