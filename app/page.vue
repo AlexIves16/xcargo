@@ -45,7 +45,9 @@
     <EmailAuthContent v-if="currentView === 'email-auth'" :trigger-anim="!showSplash" @navigate="navigateTo" />
     <AuthFinishContent v-if="currentView === 'auth-finish'" />
     <DashboardContent v-if="currentView === 'dashboard'" :trigger-anim="!showSplash" @navigate="navigateTo" />
-    <AdminContent v-if="currentView === 'admin'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+    <ClientOnly>
+      <AdminContent v-if="currentView === 'admin'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+    </ClientOnly>
 
     <!-- Animated Header (Overlay) -->
     <div class="relative z-50 w-full h-full flex flex-col justify-between pointer-events-none">

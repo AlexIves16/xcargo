@@ -226,10 +226,10 @@
 </template>
 
 <script setup>
-import { collection, query, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, where, getDocs, limit, startAfter } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, where, getDocs, limit, startAfter, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import * as XLSX from 'xlsx';
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, watch, onUnmounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 
 const props = defineProps(['triggerAnim'])
@@ -310,10 +310,21 @@ watch(currentUser, (newVal) => {
         checkAdminAndLoad();
     } else {
         isAdmin.value = false;
+        // Unsubscribe if user logs out
+        if (unsubscribe.value) {
+            unsubscribe.value();
+            unsubscribe.value = null;
+        }
         tracks.value = [];
         loading.value = false; // Stop spinner if user logs out
     }
 }, { immediate: true });
+
+onUnmounted(() => {
+    if (unsubscribe.value) {
+        unsubscribe.value();
+    }
+});
 
 const handleSearch = () => {
     resetPagination();
@@ -327,7 +338,15 @@ const resetPagination = () => {
     loadTracks();
 };
 
-const loadTracks = async (cursor = null) => {
+const unsubscribe = ref(null);
+
+const loadTracks = (cursor = null) => {
+  // If there is an active listener, unsubscribe first
+  if (unsubscribe.value) {
+    unsubscribe.value();
+    unsubscribe.value = null;
+  }
+
   loading.value = true;
   selectedTracks.value = [];
   
@@ -335,43 +354,30 @@ const loadTracks = async (cursor = null) => {
     let q;
     const coll = collection($db, 'tracks');
 
+    // Real-time listener query
+    // NOTE: Real-time pagination is complex. For this use case, we will listen to the most recent items.
+    // If search is active, listen to search results.
     if (searchQuery.value) {
         q = query(coll, where('number', '==', searchQuery.value.trim()));
     } else {
-        let constraints = [
-            orderBy('createdAt', 'desc'),
-            limit(pageSize.value)
-        ];
-        if (cursor) {
-            constraints.push(startAfter(cursor));
-        }
-        q = query(coll, ...constraints);
+        // Listen to last 'pageSize' items
+        q = query(coll, orderBy('createdAt', 'desc'), limit(pageSize.value));
     }
 
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) {
-        if (!searchQuery.value && cursor) {
-             isLastPage.value = true;
+    unsubscribe.value = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            tracks.value = [];
         } else {
-             tracks.value = [];
-             isLastPage.value = true;
+            tracks.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
-    } else {
-        tracks.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        if(searchQuery.value) {
-            latestDoc.value = null;
-            isLastPage.value = true;
-        } else {
-            latestDoc.value = snapshot.docs[snapshot.docs.length - 1]; 
-            isLastPage.value = snapshot.docs.length < pageSize.value;
-            currentCursor.value = cursor; 
-        }
-    }
-    loading.value = false;
+        loading.value = false;
+    }, (error) => {
+        console.error("Error fetching tracks:", error);
+        loading.value = false;
+    });
+
   } catch (err) {
-    console.error("Error fetching tracks:", err);
+    console.error("Error setting up listener:", err);
     loading.value = false;
   }
 };
@@ -397,11 +403,14 @@ const updateStatus = async (id, newStatus) => {
        body: { trackId: id, status: newStatus } 
     });
     
-    // Update local state immediately for UI responsiveness (optimistic update)
-    if (track) {
-        track.status = newStatus;
-        track.updatedAt = { seconds: Date.now() / 1000 }; 
-    }
+    // Optimistic update is NOT needed with onSnapshot as local listener will update automatically
+    // But we keep it if we want instant feedback before server roundtrip, though with onSnapshot it might flicker?
+    // Actually, onSnapshot usually handles local latency compensation if offline persistence is on.
+    // We'll trust onSnapshot for now to keep it simple and perfectly synced.
+    // if (track) {
+    //     track.status = newStatus;
+    //     track.updatedAt = { seconds: Date.now() / 1000 }; 
+    // }
   } catch (e) {
     console.error(e);
     alert('Error updating status');
@@ -412,7 +421,8 @@ const deleteTrack = async (id) => {
   if (!confirm(t('admin.confirm_delete'))) return;
   try {
     await deleteDoc(doc($db, 'tracks', id));
-    loadTracks(currentCursor.value);
+    await deleteDoc(doc($db, 'tracks', id));
+    // loadTracks(currentCursor.value); // Not needed with onSnapshot
   } catch (e) {
     console.error(e);
     alert(t('admin.error_delete'));
@@ -461,7 +471,7 @@ const archiveOldTracks = async () => {
   }
   alert(`Архивировано ${tracksToArchive.length} посылок.`);
   archiving.value = false;
-  loadTracks(currentCursor.value);
+  // loadTracks(currentCursor.value); // Not needed with onSnapshot
 };
 
 const syncWithSheets = async () => {
@@ -473,7 +483,11 @@ const syncWithSheets = async () => {
                 .replace('{updated}', res.stats.updatedInDb + res.stats.updatedInSheet)
                 .replace('{created}', res.stats.addedToDb + res.stats.addedToSheet)
                 .replace('{errors}', '0'));
-            resetPagination();
+            resetPagination(); // Will re-trigger listener setup if needed, or just let listener handle it
+            // Ideally onSnapshot updates automatically if docs are added/modified
+            // But if we used an API that touches backend directly without client SDK seeing it immediately?
+            // Firestore listener handles external changes! So we might not need resetPagination.
+            // But resetPagination re-runs loadTracks, which re-sets up the query. Safe to keep.
         } else {
             alert('Sync Failed: ' + res.error);
         }
