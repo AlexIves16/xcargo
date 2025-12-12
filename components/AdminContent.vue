@@ -130,6 +130,16 @@
              <button @click="clearSelection" class="text-btn small-btn">
                {{ t('admin.bulk_clear') }}
              </button>
+
+              <div class="separator-vertical"></div>
+
+              <button 
+                @click="bulkDelete"
+                class="text-btn danger small-btn"
+                :disabled="bulkUpdating"
+              >
+                {{ t('admin.bulk_delete') }}
+              </button>
            </div>
         </div>
 
@@ -402,6 +412,20 @@ const applyBulkStatus = async () => {
   
   clearSelection();
   bulkUpdating.value = false;
+};
+
+const bulkDelete = async () => {
+    if (selectedTracks.value.length === 0) return;
+    if (!confirm(t('admin.confirm_bulk_delete').replace('{n}', selectedTracks.value.length))) return;
+
+    bulkUpdating.value = true;
+    for (const id of selectedTracks.value) {
+        try {
+            await deleteDoc(doc($db, 'tracks', id));
+        } catch (e) { console.error("Error deleting doc " + id, e); }
+    }
+    clearSelection();
+    bulkUpdating.value = false;
 };
 
 const archiveOldTracks = async () => {
@@ -738,6 +762,12 @@ onUnmounted(() => {
 .bulk-label { font-weight: 600; color: #60a5fa; font-size: 0.9rem; }
 .bulk-controls { display: flex; align-items: center; gap: 10px; }
 .text-btn.small-btn { font-size: 0.85rem; }
+.separator-vertical {
+    width: 1px;
+    height: 20px;
+    background: rgba(255,255,255,0.2);
+    margin: 0 5px;
+}
 
 /* Table */
 .table-panel {
