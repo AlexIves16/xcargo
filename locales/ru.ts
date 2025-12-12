@@ -214,6 +214,8 @@ export default {
         upload_received: 'Приход (XLSX)',
         format_info: 'Формат: XLSX с колонкой "Track Number"',
         all_parcels: 'Все посылки',
+        col_china_status: 'Статус (Китай)',
+        col_second_status: 'Статус (Второй)',
         error_access: 'Ошибка доступа:',
         error_access_desc: 'У вас нет прав администратора',
         bulk_selected: 'Выбрано',

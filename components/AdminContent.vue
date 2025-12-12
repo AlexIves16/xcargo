@@ -62,6 +62,7 @@
             <span v-else>🔄 {{ t('admin.sync_btn') }}</span>
           </button>
           
+          <!-- 
           <button 
             @click="clearDatabase"
             class="action-btn red"
@@ -71,7 +72,9 @@
             <span v-if="clearing">...</span>
             <span v-else>⚠️ СБРОС БАЗЫ</span>
           </button>
+           -->
           
+          <!--
           <button 
             @click="clearDatabase"
             class="action-btn red"
@@ -81,6 +84,7 @@
             <span v-if="clearing">...</span>
             <span v-else>⚠️ {{ t('admin.clear_db_btn') || 'СБРОС БАЗЫ' }}</span>
           </button>
+          -->
         </div>
         
         <p class="info-text">

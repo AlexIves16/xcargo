@@ -134,10 +134,33 @@
             </div>
             
             <div class="track-actions">
-              <span :class="['status-badge', track.status]">
-                {{ getStatusLabel(track.status) }}
-              </span>
-              <button @click="deleteTrack(track.id)" class="delete-btn" title="Удалить">
+                <div class="status-group">
+                   <!-- China Status -->
+                   <div class="status-row" v-if="track.lastChinaStatus">
+                       <span>CN:</span>
+                       <span class="status-badge" :class="getStatusColor(track.lastChinaStatus)">
+                           {{ track.lastChinaStatus }}
+                       </span>
+                   </div>
+                   <!-- Secondary -->
+                   <div class="status-row" v-if="track.lastSecondaryStatus">
+                       <span>KZ:</span>
+                       <span class="status-badge" :class="getStatusColor(track.lastSecondaryStatus)">
+                           {{ track.lastSecondaryStatus }}
+                       </span>
+                   </div>
+                   <!-- Fallback if neither -->
+                   <div class="status-row" v-if="!track.lastChinaStatus && !track.lastSecondaryStatus">
+                       <span class="status-badge gray">Ожидание</span>
+                   </div>
+                </div>
+
+                <button class="delete-btn" @click.stop="deleteTrack(track.id)" title="Удалить">
+                  <font-awesome-icon icon="trash" /> <!-- Assuming font-awesome or simple icon -->
+                  <!-- Or just svg -->
+                   🗑️
+                </button>
+            </div>
                 ✕
               </button>
             </div>
