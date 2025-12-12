@@ -375,24 +375,31 @@ const addTrackNumber = async () => {
   error.value = ''
 
   try {
-    await addDoc(collection($db, 'tracks'), {
-      number: newTrackNumber.value.trim(),
-      description: newTrackDescription.value.trim(),
-      userId: currentUser.value.uid,
-      userEmail: currentUser.value.email,
-      userName: currentUser.value.displayName || 'Пользователь',
-      createdAt: serverTimestamp(),
-      status: 'pending'
+    const res = await $fetch('/api/user/add-track', {
+        method: 'POST',
+        body: {
+            number: newTrackNumber.value.trim(),
+            description: newTrackDescription.value.trim(),
+            userId: currentUser.value.uid,
+            userEmail: currentUser.value.email,
+            userName: currentUser.value.displayName || 'Пользователь'
+        }
     })
-    newTrackNumber.value = ''
-    newTrackDescription.value = ''
-    // Mobile: hide form after add
-    if (window.innerWidth <= 1024) {
-        showAddForm.value = false
+
+    if (res.success) {
+        newTrackNumber.value = ''
+        newTrackDescription.value = ''
+        // Mobile: hide form after add
+        if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
+            showAddForm.value = false
+        }
+    } else {
+        error.value = res.error || 'Ошибка добавления';
     }
+
   } catch (e) {
     console.error("Error adding track:", e)
-    error.value = 'Не удалось добавить трек-номер.'
+    error.value = 'Не удалось добавить трек-номер. Проверьте сеть.'
   } finally {
     loading.value = false
   }
