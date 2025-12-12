@@ -69,6 +69,16 @@
             style="margin-left: auto;" 
           >
             <span v-if="clearing">...</span>
+            <span v-else>⚠️ СБРОС БАЗЫ</span>
+          </button>
+          
+          <button 
+            @click="clearDatabase"
+            class="action-btn red"
+            :disabled="clearing"
+            style="margin-left: auto;" 
+          >
+            <span v-if="clearing">...</span>
             <span v-else>⚠️ {{ t('admin.clear_db_btn') || 'СБРОС БАЗЫ' }}</span>
           </button>
         </div>
@@ -184,11 +194,10 @@
                        />
                     </th>
                     <th>{{ t('admin.table.track') }}</th>
-                    <th>{{ t('admin.table.desc') }}</th>
-                    <th>{{ t('admin.table.email') }}</th>
-                    <th>{{ t('admin.table.name') }}</th>
+                    <th>{{ t('admin.col_china_status') || 'Статус (Китай)' }}</th>
+                    <th>{{ t('admin.col_second_status') || 'Статус (Второй)' }}</th>
                     <th>{{ t('admin.table.date') }}</th>
-                    <th>{{ t('admin.table.status') }}</th>
+                    <th>{{ t('admin.table.name') }}</th>
                     <th class="text-right">{{ t('admin.table.actions') }}</th>
                  </tr>
               </thead>
@@ -203,24 +212,24 @@
                        />
                     </td>
                     <td class="font-mono">{{ track.number }}</td>
-                    <td class="desc-cell" :title="track.description">{{ track.description || '-' }}</td>
-                    <td>{{ track.userEmail || '-' }}</td>
-                    <td>{{ track.userName || '-' }}</td>
-                    <td class="text-sm date-cell">{{ formatDate(track.createdAt) }}</td>
+                    
+                    <!-- China Status -->
                     <td>
-                       <select 
-                         v-model="track.status" 
-                         @change="updateStatus(track.id, track.status)"
-                         class="status-select"
-                         :class="track.status"
-                       >
-                         <option value="pending">{{ t('status.pending') }}</option>
-                         <option value="in_transit">{{ t('status.in_transit') }}</option>
-                         <option value="arrived">{{ t('status.arrived') }}</option>
-                         <option value="delivered">{{ t('status.delivered') }}</option>
-                         <option value="lost">{{ t('status.lost') }}</option>
-                       </select>
+                       <span class="status-badge" :class="getStatusColor(track.lastChinaStatus, 'china')">
+                          {{ track.lastChinaStatus || '-' }}
+                       </span>
                     </td>
+
+                    <!-- Secondary Status -->
+                    <td>
+                       <span class="status-badge" :class="getStatusColor(track.lastSecondaryStatus, 'secondary')">
+                          {{ track.lastSecondaryStatus || '-' }}
+                       </span>
+                    </td>
+
+                    <td class="text-sm date-cell">{{ formatDate(track.createdAt) }}</td>
+                    <td>{{ track.userName || '-' }}</td>
+                    
                     <td class="text-right">
                        <button @click="deleteTrack(track.id)" class="delete-icon-btn" title="Удалить">
                           ✕
@@ -275,6 +284,7 @@ const loading = ref(true);
 const isAdmin = ref(false);
 const uploading = ref(false);
 const syncing = ref(false);
+const clearing = ref(false);
 const archiving = ref(false);
 const chinaInput = ref(null);
 const receivedInput = ref(null);
@@ -501,6 +511,44 @@ const syncWithSheets = async () => {
         alert('Sync Error: ' + e.message);
     }
     finally { syncing.value = false; }
+};
+
+const clearDatabase = async () => {
+    console.log('[ClearDB] Button clicked');
+    if (!confirm('ВЫ УВЕРЕНЫ? ЭТО УДАЛИТ ВСЕ ТРЕКИ ИЗ БАЗЫ ДАННЫХ!')) return;
+    if (!confirm('ДЕЙСТВИТЕЛЬНО УДАЛИТЬ ВСЁ? ЭТО НЕОБРАТИМО!')) return;
+
+    clearing.value = true;
+    console.log('[ClearDB] Sending request...');
+    try {
+        const res = await $fetch('/api/admin/clear-db', {
+            method: 'POST',
+        });
+        console.log('[ClearDB] Response:', res);
+        
+        if (res.success) {
+            alert('База данных очищена.');
+            tracks.value = [];
+            fetchStats(); // Update stats
+        } else {
+             console.error('[ClearDB] Valid response but success=false', res);
+             alert('Ошибка очистки: ' + res.error);
+        }
+    } catch (e) {
+        console.error('[ClearDB] Exception:', e);
+        alert('Ошибка соединения или сервера');
+    } finally {
+        clearing.value = false;
+    }
+};
+
+const getStatusColor = (status, type) => {
+    if (!status) return 'gray';
+    const s = status.toLowerCase();
+    if (s.includes('прибыл') || s.includes('arrived') || s.includes('склад')) return 'green';
+    if (s.includes('пути') || s.includes('transit') || s.includes('отправлен')) return 'blue';
+    if (s.includes('выдан') || s.includes('delivered')) return 'purple';
+    return 'gray';
 };
 
 const triggerUpload = (type) => {
