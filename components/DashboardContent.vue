@@ -155,6 +155,7 @@
                    </div>
                 </div>
 
+                <button class="delete-btn" @click.stop="deleteTrack(track.id)" title="Удалить">
                    🗑️
                 </button>
             </div>
