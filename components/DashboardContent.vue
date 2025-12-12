@@ -161,9 +161,7 @@
                    🗑️
                 </button>
             </div>
-                ✕
-              </button>
-            </div>
+
           </div>
         </div>
       </div>
