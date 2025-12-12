@@ -44,7 +44,9 @@
     <LoginContent v-if="currentView === 'login'" :trigger-anim="!showSplash" @navigate="navigateTo" />
     <EmailAuthContent v-if="currentView === 'email-auth'" :trigger-anim="!showSplash" @navigate="navigateTo" />
     <AuthFinishContent v-if="currentView === 'auth-finish'" />
-    <DashboardContent v-if="currentView === 'dashboard'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+    <ClientOnly>
+      <DashboardContent v-if="currentView === 'dashboard'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+    </ClientOnly>
     <ClientOnly>
       <AdminContent v-if="currentView === 'admin'" :trigger-anim="!showSplash" @navigate="navigateTo" />
     </ClientOnly>
