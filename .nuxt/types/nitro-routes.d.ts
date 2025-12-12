@@ -3,6 +3,36 @@ import type { Serialize, Simplify } from "nitropack/types";
 declare module "nitropack/types" {
   type Awaited<T> = T extends PromiseLike<infer U> ? Awaited<U> : T
   interface InternalApi {
+    '/api/admin/stats': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/stats.get').default>>>>
+    }
+    '/api/admin/tracks/update': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/tracks/update.post').default>>>>
+    }
+    '/api/admin/update-track': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/update-track.post').default>>>>
+    }
+    '/api/auth/telegram-init': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/telegram-init.post').default>>>>
+    }
+    '/api/auth/telegram-status': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/telegram-status.get').default>>>>
+    }
+    '/api/auth/telegram': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/telegram.post').default>>>>
+    }
+    '/api/debug/webhook-status': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/debug/webhook-status.get').default>>>>
+    }
+    '/api/sync/sheets': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/sync/sheets.post').default>>>>
+    }
+    '/api/telegram-webhook': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/telegram-webhook.post').default>>>>
+    }
+    '/api/track': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/track.post').default>>>>
+    }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/@nuxt/nitro-server/dist/runtime/handlers/renderer').default>>>>
     }

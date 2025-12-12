@@ -21,6 +21,7 @@ export const BlobOverlay: typeof import("../components/BlobOverlay.vue").default
 export const ContactsContent: typeof import("../components/ContactsContent.vue").default
 export const DashboardContent: typeof import("../components/DashboardContent.vue").default
 export const EmailAuthContent: typeof import("../components/EmailAuthContent.vue").default
+export const GoogleRecaptcha: typeof import("../components/GoogleRecaptcha.vue").default
 export const HomeContent: typeof import("../components/HomeContent.vue").default
 export const LoginContent: typeof import("../components/LoginContent.vue").default
 export const PrivacyContent: typeof import("../components/PrivacyContent.vue").default
@@ -62,6 +63,7 @@ export const LazyBlobOverlay: LazyComponent<typeof import("../components/BlobOve
 export const LazyContactsContent: LazyComponent<typeof import("../components/ContactsContent.vue").default>
 export const LazyDashboardContent: LazyComponent<typeof import("../components/DashboardContent.vue").default>
 export const LazyEmailAuthContent: LazyComponent<typeof import("../components/EmailAuthContent.vue").default>
+export const LazyGoogleRecaptcha: LazyComponent<typeof import("../components/GoogleRecaptcha.vue").default>
 export const LazyHomeContent: LazyComponent<typeof import("../components/HomeContent.vue").default>
 export const LazyLoginContent: LazyComponent<typeof import("../components/LoginContent.vue").default>
 export const LazyPrivacyContent: LazyComponent<typeof import("../components/PrivacyContent.vue").default>

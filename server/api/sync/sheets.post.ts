@@ -110,7 +110,7 @@ export default defineEventHandler(async (event) => {
         const sheetTracks = new Map();
 
         // Parse Sheet Rows (Skipping Header)
-        // Expected: [Track, Description, Status, Date, User]
+        // Expected: [Track, China Status, Secondary Status, Date, User]
         if (rows.length > 1) {
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
@@ -118,8 +118,8 @@ export default defineEventHandler(async (event) => {
                 if (trackNum) {
                     sheetTracks.set(trackNum, {
                         number: trackNum,
-                        description: row[1] || '',
-                        status: row[2] || 'pending',
+                        chinaStatus: row[1]?.toString().trim() || '',
+                        secondaryStatus: row[2]?.toString().trim() || '',
                         date: row[3] || '',
                         rowIndex: i + 1 // 1-based index for updates
                     });
@@ -133,7 +133,7 @@ export default defineEventHandler(async (event) => {
                 range: `${firstSheetTitle}!A1:E1`,
                 valueInputOption: 'RAW',
                 requestBody: {
-                    values: [['Трек-номер', 'Описание', 'Статус', 'Дата добавления', 'ID Пользователя']]
+                    values: [['ТРЭК-НОМЕР', 'ПЕРВИЧНЫЙ-СТАТУС(КИТАЙ)', 'ВТОРИЧНЫЙ-СТАТУС', 'ДАТА', 'ID ПОЛЬЗОВАТЕЛЯ']]
                 },
                 auth: authClient as any
             });
@@ -156,10 +156,11 @@ export default defineEventHandler(async (event) => {
 
             if (dbTrack && !sheetTrack) {
                 // Exists in DB, missing in Sheet -> Add to Sheet
+                // We map 'lastChinaStatus' to Col 1, 'lastSecondaryStatus' to Col 2
                 sheetAppends.push([
                     dbTrack.number,
-                    dbTrack.description || '',
-                    dbTrack.status || 'pending',
+                    dbTrack.lastChinaStatus || '',
+                    dbTrack.lastSecondaryStatus || '',
                     dbTrack.createdAt ? new Date(dbTrack.createdAt.seconds * 1000).toISOString().split('T')[0] : '',
                     dbTrack.userId || ''
                 ]);
@@ -168,13 +169,33 @@ export default defineEventHandler(async (event) => {
             else if (!dbTrack && sheetTrack) {
                 // Exists in Sheet, missing in DB -> Add to DB
                 const newDocRef = db.collection('tracks').doc();
+
+                // Initial History
+                const history = [];
+                if (sheetTrack.chinaStatus) {
+                    history.push({
+                        status: sheetTrack.chinaStatus,
+                        location: 'Китай',
+                        date: Timestamp.now()
+                    });
+                }
+                if (sheetTrack.secondaryStatus) {
+                    history.push({
+                        status: sheetTrack.secondaryStatus,
+                        location: 'International',
+                        date: Timestamp.now()
+                    });
+                }
+
                 dbOperations.push({
                     type: 'set',
                     ref: newDocRef,
                     data: {
                         number: sheetTrack.number,
-                        description: sheetTrack.description,
-                        status: sheetTrack.status,
+                        lastChinaStatus: sheetTrack.chinaStatus,
+                        lastSecondaryStatus: sheetTrack.secondaryStatus,
+                        status: sheetTrack.secondaryStatus || sheetTrack.chinaStatus || 'pending', // Legacy fallback
+                        history: history,
                         createdAt: Timestamp.now(),
                         updatedAt: Timestamp.now(),
                         source: 'sheet_sync'
@@ -183,14 +204,44 @@ export default defineEventHandler(async (event) => {
                 stats.addedToDb++;
             }
             else if (dbTrack && sheetTrack) {
-                // Exists in Both -> Sync Status from Sheet to DB if valid
-                const validStatuses = ['pending', 'in_transit', 'arrived', 'delivered', 'lost'];
-                if (validStatuses.includes(sheetTrack.status) && sheetTrack.status !== dbTrack.status) {
+                // Exists in Both -> Sync Status from Sheet to DB with History
+                let history = dbTrack.history || [];
+                // Ensure history is array
+                if (!Array.isArray(history)) history = [];
+
+                let changed = false;
+                const lastChina = dbTrack.lastChinaStatus || '';
+                const lastSecond = dbTrack.lastSecondaryStatus || '';
+
+                // Check China Status Change
+                if (sheetTrack.chinaStatus && sheetTrack.chinaStatus !== lastChina) {
+                    history.push({
+                        status: sheetTrack.chinaStatus,
+                        location: 'Китай',
+                        date: Timestamp.now()
+                    });
+                    changed = true;
+                }
+
+                // Check Secondary Status Change
+                if (sheetTrack.secondaryStatus && sheetTrack.secondaryStatus !== lastSecond) {
+                    history.push({
+                        status: sheetTrack.secondaryStatus,
+                        location: 'International',
+                        date: Timestamp.now()
+                    });
+                    changed = true;
+                }
+
+                if (changed) {
                     dbOperations.push({
                         type: 'update',
                         ref: db.collection('tracks').doc(dbTrack.id),
                         data: {
-                            status: sheetTrack.status,
+                            lastChinaStatus: sheetTrack.chinaStatus,
+                            lastSecondaryStatus: sheetTrack.secondaryStatus,
+                            status: sheetTrack.secondaryStatus || sheetTrack.chinaStatus || 'updated', // Legacy field update
+                            history: history,
                             updatedAt: Timestamp.now()
                         }
                     });

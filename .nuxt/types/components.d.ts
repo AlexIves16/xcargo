@@ -21,6 +21,7 @@ interface _GlobalComponents {
   'ContactsContent': typeof import("../../components/ContactsContent.vue").default
   'DashboardContent': typeof import("../../components/DashboardContent.vue").default
   'EmailAuthContent': typeof import("../../components/EmailAuthContent.vue").default
+  'GoogleRecaptcha': typeof import("../../components/GoogleRecaptcha.vue").default
   'HomeContent': typeof import("../../components/HomeContent.vue").default
   'LoginContent': typeof import("../../components/LoginContent.vue").default
   'PrivacyContent': typeof import("../../components/PrivacyContent.vue").default
@@ -62,6 +63,7 @@ interface _GlobalComponents {
   'LazyContactsContent': LazyComponent<typeof import("../../components/ContactsContent.vue").default>
   'LazyDashboardContent': LazyComponent<typeof import("../../components/DashboardContent.vue").default>
   'LazyEmailAuthContent': LazyComponent<typeof import("../../components/EmailAuthContent.vue").default>
+  'LazyGoogleRecaptcha': LazyComponent<typeof import("../../components/GoogleRecaptcha.vue").default>
   'LazyHomeContent': LazyComponent<typeof import("../../components/HomeContent.vue").default>
   'LazyLoginContent': LazyComponent<typeof import("../../components/LoginContent.vue").default>
   'LazyPrivacyContent': LazyComponent<typeof import("../../components/PrivacyContent.vue").default>

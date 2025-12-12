@@ -7,6 +7,18 @@
           <h1 class="page-title">{{ t('admin.title') }}</h1>
        </div>
        <div class="header-actions">
+          <!-- Stats Indicators -->
+          <div v-if="stats" class="stats-indicators">
+              <div class="stat-badge" :class="{ 'warning': stats.db > 20000 }">
+                  <span class="stat-label">DB:</span>
+                  <span class="stat-val">{{ stats.db }}</span>
+              </div>
+              <div class="stat-badge" :class="{ 'warning': stats.sheet > 20000 }">
+                  <span class="stat-label">Sheet:</span>
+                  <span class="stat-val">{{ stats.sheet }}</span>
+              </div>
+          </div>
+
           <button @click="$emit('navigate', 'dashboard')" class="text-btn">
              {{ t('nav.profile') }}
           </button>
@@ -257,6 +269,7 @@ const archiving = ref(false);
 const chinaInput = ref(null);
 const receivedInput = ref(null);
 const unsubscribe = ref(null);
+const stats = ref(null);
 
 const pageSize = ref(50);
 const pageHistory = ref([]); 
@@ -555,8 +568,20 @@ const checkAdminAndLoad = () => {
 onMounted(() => {
    if (currentUser.value) {
        checkAdminAndLoad();
+       fetchStats();
    }
 });
+
+const fetchStats = async () => {
+    try {
+        const res = await $fetch('/api/admin/stats');
+        if (res.success) {
+            stats.value = res.stats;
+        }
+    } catch (e) {
+        console.error("Failed to load stats", e);
+    }
+};
 
 watch(currentUser, (newVal) => {
     if (newVal) {
@@ -629,7 +654,39 @@ onUnmounted(() => {
 }
 
 .text-btn:hover { color: #818CF8; }
+.text-btn:hover { color: #818CF8; }
 .text-btn.danger:hover { color: #ef4444; }
+
+/* Stats Indicators */
+.stats-indicators {
+    display: flex;
+    gap: 15px;
+    margin-right: 20px;
+    align-items: center;
+}
+
+.stat-badge {
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    display: flex;
+    gap: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.stat-badge.warning {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+.stat-badge.warning .stat-val {
+    color: #fca5a5; /* Reddish text */
+    font-weight: bold;
+}
+
+.stat-label { color: #94a3b8; }
+.stat-val { color: white; font-family: monospace; }
+
 
 /* Content Grid */
 .content-grid {

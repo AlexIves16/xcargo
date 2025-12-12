@@ -49,13 +49,41 @@
             </span>
           </div>
           <div class="card-body">
-            <div v-if="track.description" class="detail-row">
+             <!-- Current Info -->
+             <div class="current-info-grid">
+                 <div v-if="track.lastChinaStatus" class="status-box china">
+                     <span class="box-label">🇨🇳 Китай</span>
+                     <span class="box-val">{{ track.lastChinaStatus }}</span>
+                 </div>
+                 <div v-if="track.lastSecondaryStatus" class="status-box world">
+                     <span class="box-label">🌍 Статус</span>
+                     <span class="box-val">{{ track.lastSecondaryStatus }}</span>
+                 </div>
+             </div>
+
+             <!-- History Timeline -->
+             <div v-if="track.history && track.history.length" class="history-timeline">
+                 <div class="timeline-title">История отслеживания</div>
+                 <div class="timeline-items">
+                     <!-- Sort history by date desc -->
+                     <div v-for="(item, hIdx) in sortHistory(track.history)" :key="hIdx" class="timeline-item">
+                         <div class="dot"></div>
+                         <div class="line"></div>
+                         <div class="time-content">
+                             <div class="date">{{ formatDate(item.date) }}</div>
+                             <div class="status-text">{{ item.status }}</div>
+                             <div class="location-badge" :class="item.location === 'Китай' ? 'cn' : 'int'">
+                                 {{ item.location }}
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+
+            <!-- Legacy Description Fallback -->
+            <div v-else-if="track.description" class="detail-row">
               <span class="label">{{ t('search.desc') }}:</span>
               <span class="value">{{ track.description }}</span>
-            </div>
-             <div v-if="track.updatedAt" class="detail-row">
-              <span class="label">Обновлено:</span>
-              <span class="value">{{ formatDate(track.updatedAt) }}</span>
             </div>
           </div>
         </div>
@@ -166,7 +194,17 @@ const getStatusClass = (status) => {
 
 const formatDate = (val) => {
   if (!val) return ''
-  return new Date(val).toLocaleDateString('ru-RU')
+  // Handle Firestore Timestamp or Date String
+  const date = val.seconds ? new Date(val.seconds * 1000) : new Date(val)
+  return date.toLocaleString('ru-RU')
+}
+
+const sortHistory = (history) => {
+    return [...history].sort((a, b) => {
+        const dateA = a.date.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date)
+        const dateB = b.date.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date)
+        return dateB - dateA // Descending
+    })
 }
 </script>
 
@@ -488,5 +526,61 @@ const formatDate = (val) => {
   .status-msg {
     font-size: 1.4rem;
   }
+  .status-msg {
+    font-size: 1.4rem;
+  }
 }
+
+/* Timeline Styles */
+.current-info-grid {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.status-box {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.box-label { font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px; }
+.box-val { font-size: 0.95rem; color: #fff; font-weight: 500; }
+
+.history-timeline {
+    margin-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 15px;
+}
+.timeline-title { font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px; }
+.timeline-items { display: flex; flex-direction: column; gap: 0; }
+.timeline-item { position: relative; padding-left: 25px; padding-bottom: 20px; border-left: 1px solid rgba(255,255,255,0.1); }
+.timeline-item:last-child { border-left: none; padding-bottom: 0; }
+
+.dot {
+    position: absolute;
+    left: -5px;
+    top: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #60a5fa;
+    box-shadow: 0 0 5px rgba(96, 165, 250, 0.5);
+}
+
+.time-content { display: flex; flex-direction: column; gap: 2px; }
+.date { font-size: 0.75rem; color: #64748b; }
+.status-text { font-size: 0.95rem; color: #e2e8f0; }
+.location-badge { 
+    display: inline-block; 
+    font-size: 0.7rem; 
+    padding: 2px 6px; 
+    border-radius: 10px; 
+    background: rgba(255,255,255,0.1); 
+    width: fit-content; 
+    margin-top: 4px;
+}
+.location-badge.cn { color: #fca5a5; background: rgba(239, 68, 68, 0.1); }
+.location-badge.int { color: #86efac; background: rgba(34, 197, 94, 0.1); }
 </style>

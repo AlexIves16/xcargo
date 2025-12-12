@@ -67,6 +67,16 @@ declare module 'nuxt/schema' {
       cdnURL: string,
    },
 
+   telegramBotToken: string,
+
+   googleClientEmail: string,
+
+   googlePrivateKey: string,
+
+   spreadsheetId: string,
+
+   recaptchaSecretKey: string,
+
    nitro: {
       envPrefix: string,
    },
@@ -85,6 +95,14 @@ declare module 'nuxt/schema' {
    firebaseAppId: string,
 
    firebaseMeasurementId: string,
+
+   telegramBotName: string,
+
+   spreadsheetId: string,
+
+   recaptchaSiteKey: string,
+
+   firebaseVapidKey: string,
   }
 }
 declare module 'vue' {

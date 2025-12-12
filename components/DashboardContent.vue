@@ -18,6 +18,15 @@
       </div>
 
       <div class="header-actions">
+        <!-- Add Track (Mobile Toggle) -->
+        <button 
+          @click="toggleAddForm" 
+          class="icon-btn add-btn-mobile mobile-only"
+          :title="t('dashboard.add_track')"
+        >
+          <span class="icon">{{ showAddForm ? '✕' : '➕' }}</span>
+        </button>
+
         <!-- Notification Toggle -->
         <button 
           @click="enableNotifications" 
@@ -73,7 +82,7 @@
     <div class="dashboard-main">
       
       <!-- Add Track Section -->
-      <div class="glass-panel add-track-panel">
+      <div class="glass-panel add-track-panel" :class="{ 'hidden-mobile': !showAddForm }">
         <h2 class="panel-title">{{ t('dashboard.add_track') }}</h2>
         <div class="input-group">
           <input 
@@ -165,6 +174,11 @@ const tracks = ref([])
 const loading = ref(false)
 const loadingData = ref(true)
 const error = ref('')
+const showAddForm = ref(false)
+
+const toggleAddForm = () => {
+    showAddForm.value = !showAddForm.value
+}
 
 const currentUser = useState('firebaseUser')
 // Fallback if not ready yet (avoid hydration mismatch if possible, but safe here)
@@ -347,6 +361,10 @@ const addTrackNumber = async () => {
     })
     newTrackNumber.value = ''
     newTrackDescription.value = ''
+    // Mobile: hide form after add
+    if (window.innerWidth <= 1024) {
+        showAddForm.value = false
+    }
   } catch (e) {
     console.error("Error adding track:", e)
     error.value = 'Не удалось добавить трек-номер.'
@@ -794,13 +812,108 @@ const getStatusLabel = (status) => {
   .dashboard-content {
      left: 0; 
      width: 100%;
-     padding-top: 190px; /* 100px (Site Header) + 80px (Dash Header) + 10px Gap */
-     padding-bottom: 300px;
-     padding-left: 20px;
-     padding-right: 20px;
-     overflow-y: scroll; 
-     -webkit-overflow-scrolling: touch; 
+     padding-top: 100px; /* Reduced top padding */
+     padding-bottom: 20px;
+     padding-left: 15px;
+     padding-right: 15px;
+     height: 100vh;
+     overflow: hidden;
+     display: flex;
+     flex-direction: column;
   }
+
+  /* Compact Header */
+  .header-section {
+      margin-bottom: 15px;
+      padding: 0;
+      gap: 10px;
+      background: transparent;
+      backdrop-filter: none;
+      flex-direction: row;
+      justify-content: space-between;
+      width: 100%;
+      height: 50px; /* Force small height */
+  }
+
+  /* Profile Compact */
+  .user-profile {
+      gap: 10px;
+  }
+  .avatar-ring {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: none;
+      box-shadow: none;
+      padding: 0;
+  }
+  .user-avatar {
+      border: 1px solid rgba(255,255,255,0.3);
+  }
+  .welcome-text { display: none; }
+  .user-name {
+      font-size: 1.1rem;
+      text-align: left;
+  }
+
+  /* Actions Compact */
+  .header-actions {
+      gap: 8px;
+  }
+  .icon-btn {
+      width: 35px;
+      height: 35px;
+      background: rgba(0,0,0,0.2) !important; /* Transparent dark */
+      border: 1px solid rgba(255,255,255,0.1);
+  }
+  .icon { font-size: 1rem; }
+  
+  .mobile-only { display: flex !important; }
+
+  /* Main Area */
+  .dashboard-main {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden; /* Prevent body scroll */
+      gap: 15px;
+  }
+
+  /* Form Visibility */
+  .add-track-panel {
+      order: -1; /* Ensure on top if shown */
+      padding: 15px;
+      margin-bottom: 0;
+  }
+  .add-track-panel.hidden-mobile {
+      display: none;
+  }
+
+  /* List Scroll - Critical Fix */
+  .list-panel {
+      flex: 1;
+      height: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0; /* No margin bottom to avoid push */
+      padding: 15px;
+      padding-bottom: 80px; /* Space for footer/nav stuff if any, or just safe area */
+  }
+  
+  .tracks-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 5px;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 50px; /* Extra inner cushion */
+  }
+  
+  .empty-state {
+      padding: 20px;
+  }
+}
+.mobile-only { display: none; }
 
   /* Fixed Header - Positioned BELOW site header */
   .header-section {

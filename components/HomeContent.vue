@@ -355,7 +355,11 @@ onMounted(() => {
     gap: 10px;
     align-items: center;
     text-align: center;
+    overflow-y: auto; /* Enable full page scroll */
+    justify-content: flex-start; /* Start content at top */
+    -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
   }
+  .home-content::-webkit-scrollbar { display: none; } /* Hide scrollbar */
   .title-container {
     width: 100%;
     display: flex;
@@ -416,9 +420,10 @@ onMounted(() => {
     gap: 10px;
     width: 100%;
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: visible; /* Remove inner scroll */
     font-size: 0.8rem;
     line-height: 1.3;
+    height: auto; /* Let it grow */
   }
   .info-card {
     padding: 12px 8px; 
@@ -443,6 +448,6 @@ onMounted(() => {
      hyphens: auto;
   }
   
-  .info-grid::-webkit-scrollbar { display: none; }
+  /* .info-grid::-webkit-scrollbar { display: none; } - Not needed if not scrolling */
 }
 </style>
