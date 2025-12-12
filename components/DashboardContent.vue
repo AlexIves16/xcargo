@@ -155,11 +155,25 @@
                    </div>
                 </div>
 
-                <button class="delete-btn" @click.stop="deleteTrack(track.id)" title="Удалить">
-                  <font-awesome-icon icon="trash" /> <!-- Assuming font-awesome or simple icon -->
-                  <!-- Or just svg -->
                    🗑️
                 </button>
+            </div>
+            
+            <!-- History Section -->
+            <div v-if="track.history && track.history.length > 0" class="history-section">
+                <button @click="track.showHistory = !track.showHistory" class="history-toggle-btn">
+                    {{ track.showHistory ? '▲ Скрыть историю' : '▼ Показать историю (' + track.history.length + ')' }}
+                </button>
+                <div v-if="track.showHistory" class="history-list">
+                    <div v-for="(h, idx) in track.history.slice().reverse()" :key="idx" class="history-item">
+                        <div class="history-dot"></div>
+                        <div class="history-content">
+                            <span class="history-date">{{ formatDate(h.date) }}</span>
+                            <span class="history-loc">{{ h.location }}:</span>
+                            <span class="history-status">{{ h.status }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
           </div>
@@ -776,6 +790,59 @@ const getStatusColor = (status) => {
 }
 
 .status-badge.gray { background: rgba(255, 255, 255, 0.1); color: #cbd5e1; }
+
+.history-section {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    width: 100%;
+}
+
+.history-toggle-btn {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+}
+.history-toggle-btn:hover { color: #94a3b8; }
+
+.history-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.history-dot {
+    width: 6px;
+    height: 6px;
+    background: #3b82f6;
+    border-radius: 50%;
+}
+
+.history-date {
+    color: #94a3b8;
+    font-size: 0.75rem;
+    min-width: 110px;
+}
+
+.history-loc {
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.history-status {
+    color: #cbd5e1;
+}
 .status-badge.green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
 .status-badge.blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 .status-badge.purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
