@@ -154,7 +154,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
-import { getToken } from 'firebase/messaging'
+import { signOut } from 'firebase/auth'
+// import { getToken } from 'firebase/messaging' // Dynamic import used instead to prevent SSR crash
 import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps({
@@ -306,6 +307,9 @@ const enableNotifications = async (silent = false) => {
       
       let vapidKey = config.public.firebaseVapidKey;
       if (vapidKey) vapidKey = vapidKey.trim();
+
+      // Dynamic import to prevent SSR issues
+      const { getToken } = await import('firebase/messaging')
 
       // Get Token
       const currentToken = await getToken(messaging, { 
