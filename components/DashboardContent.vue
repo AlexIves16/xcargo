@@ -775,9 +775,7 @@ const getStatusColor = (status) => {
   padding: 5px;
   transition: color 0.2s;
 }
-  padding: 5px;
-  transition: color 0.2s;
-}
+
 
 .delete-btn:hover {
   color: #ef4444;
