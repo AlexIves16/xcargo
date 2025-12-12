@@ -154,7 +154,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
-import { signOut } from 'firebase/auth'
+
 // import { getToken } from 'firebase/messaging' // Dynamic import used instead to prevent SSR crash
 import { useI18n } from '@/composables/useI18n'
 
