@@ -6,7 +6,7 @@
         <!--Rocket Widget & Logo Link-->
         <a href="#" @click.prevent="onLogoClick" class="logo-link">
           <RocketWidget />
-          <h1>CargoXpress</h1>
+          <h1>XPRESS CARGO</h1>
         </a>
         
         <div class="lang-switcher">

@@ -13,14 +13,9 @@
     <!-- Fade-in Content Wrapper -->
     <div class="content-body" :class="{ visible: showContent }">
       
-      <!-- Intro & Stats -->
+      <!-- Intro -->
       <div class="intro-section">
         <p class="description">{{ t('about_page.description') }}</p>
-        <div class="stats-row">
-          <div class="stat-item"><strong>5+</strong> {{ t('about_page.stats.years') }}</div>
-          <div class="stat-item"><strong>100k+</strong> {{ t('about_page.stats.parcels') }}</div>
-          <div class="stat-item"><strong>100%</strong> {{ t('about_page.stats.resp') }}</div>
-        </div>
       </div>
 
       <!-- Principles Grid -->
