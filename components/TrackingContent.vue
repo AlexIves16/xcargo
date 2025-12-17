@@ -249,6 +249,7 @@ const sortHistory = (history) => {
   margin: 0;
   padding: 0;
   display: inline-block;
+  text-transform: uppercase;
 }
 
 .title-front {
@@ -458,7 +459,7 @@ const sortHistory = (history) => {
   }
 
   .main-title {
-    font-size: 4.3rem;
+    font-size: 2.9rem;
     line-height: 1;
   }
 
@@ -490,13 +491,13 @@ const sortHistory = (history) => {
   }
 
   .glow-input {
-    font-size: 2rem; /* Increased input text */
-    padding: 30px;
+    font-size: 1rem;
+    padding: 15px;
   }
 
   .search-btn {
-    padding: 30px;
-    font-size: 4rem; /* Requested 3x size */
+    padding: 15px;
+    font-size: 1.3rem;
     width: 100%;
     line-height: 1;
   }

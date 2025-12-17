@@ -290,6 +290,8 @@ onMounted(() => {
   .services-content {
     padding: 20px 15px;
     height: auto;
+    align-items: center;
+    text-align: center;
   }
 
   .title-container {

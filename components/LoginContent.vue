@@ -383,7 +383,7 @@ const goToEmailAuth = () => {
   }
 
   .main-title {
-    font-size: 2rem;
+    font-size: 4rem;
     line-height: 1.1;
   }
 
