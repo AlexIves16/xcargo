@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3';
 import { getApps, getApp, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 import { google } from 'googleapis';
 
 export default defineEventHandler(async (event) => {
@@ -50,6 +51,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const db = getFirestore(app);
+    const messaging = getMessaging(app);
 
     // 2. Initialize Google Sheets Auth
     console.log('[Sync] Initializing Google Auth (JWT)...');
@@ -145,7 +147,8 @@ export default defineEventHandler(async (event) => {
 
         const dbOperations = []; // Array of { type: 'set' | 'update', ref: DocumentReference, data: any }
         const sheetAppends = [];
-        let stats = { addedToDb: 0, addedToSheet: 0, updatedInDb: 0, updatedInSheet: 0 };
+        const tracksToNotify: { userId: string; trackNumber: string; newStatus: string }[] = []; // FCM notifications queue
+        let stats = { addedToDb: 0, addedToSheet: 0, updatedInDb: 0, updatedInSheet: 0, notificationsSent: 0 };
 
         const allTrackNumbers = new Set([...dbTracks.keys(), ...sheetTracks.keys()]);
         console.log(`[Sync] Total unique tracks to process: ${allTrackNumbers.size}`);
@@ -246,6 +249,16 @@ export default defineEventHandler(async (event) => {
                         }
                     });
                     stats.updatedInDb++;
+
+                    // Queue FCM notification if user exists
+                    if (dbTrack.userId) {
+                        const newStatus = sheetTrack.secondaryStatus || sheetTrack.chinaStatus || '';
+                        tracksToNotify.push({
+                            userId: dbTrack.userId,
+                            trackNumber: dbTrack.number,
+                            newStatus: newStatus
+                        });
+                    }
                 }
             }
         }
@@ -290,7 +303,42 @@ export default defineEventHandler(async (event) => {
             });
         }
 
-        console.log('[Sync] Operation successful');
+        // 3. Send FCM Notifications for changed tracks
+        if (tracksToNotify.length > 0) {
+            console.log(`[Sync] Sending ${tracksToNotify.length} FCM notifications...`);
+
+            for (const item of tracksToNotify) {
+                try {
+                    // Get user's FCM token
+                    const userSnap = await db.collection('users').doc(item.userId).get();
+                    const userData = userSnap.data();
+
+                    if (userData?.fcmToken) {
+                        const message = {
+                            token: userData.fcmToken,
+                            notification: {
+                                title: '📦 Обновление статуса',
+                                body: `Посылка ${item.trackNumber}: ${item.newStatus}`
+                            },
+                            data: {
+                                trackNumber: item.trackNumber,
+                                url: '/dashboard'
+                            }
+                        };
+
+                        await messaging.send(message);
+                        stats.notificationsSent++;
+                        console.log(`[FCM] ✅ Sent to ${userData.email} for ${item.trackNumber}`);
+                    } else {
+                        console.log(`[FCM] ℹ️ No token for user ${item.userId}`);
+                    }
+                } catch (fcmError: any) {
+                    console.error(`[FCM] ❌ Error sending to ${item.userId}:`, fcmError.message);
+                }
+            }
+        }
+
+        console.log('[Sync] Operation successful. Notifications sent:', stats.notificationsSent);
         return { success: true, stats };
 
     } catch (error: any) {

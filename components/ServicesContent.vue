@@ -75,20 +75,16 @@ onMounted(() => {
 
 <style scoped>
 .services-content {
-  position: absolute;
-  top: 0;
-  left: 100px; 
-  z-index: 20; 
-  width: calc(100vw - 120px - 20vw);
-  height: 100vh;
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Move content up */
-  padding: 15vh 20px 20px 20px;
-  overflow: hidden;
+  justify-content: flex-start;
+  padding: 40px 20px;
   color: white;
   font-family: 'Poppins', sans-serif;
-  pointer-events: none;
 }
 
 .services-content * {
@@ -292,12 +288,8 @@ onMounted(() => {
 
 @media (max-width: 1024px) {
   .services-content {
-    left: 0;
-    width: 100%;
-    overflow-y: scroll; /* Enable full page scroll */
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 300px;
-    height: 100vh; /* Ensure full viewport height */
+    padding: 20px 15px;
+    height: auto;
   }
 
   .title-container {

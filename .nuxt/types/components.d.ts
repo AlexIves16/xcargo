@@ -25,6 +25,7 @@ interface _GlobalComponents {
   'HomeContent': typeof import("../../components/HomeContent.vue").default
   'LoginContent': typeof import("../../components/LoginContent.vue").default
   'PrivacyContent': typeof import("../../components/PrivacyContent.vue").default
+  'PublicOfferContent': typeof import("../../components/PublicOfferContent.vue").default
   'RocketLaunch': typeof import("../../components/RocketLaunch.vue").default
   'RocketWidget': typeof import("../../components/RocketWidget.vue").default
   'ServicesContent': typeof import("../../components/ServicesContent.vue").default
@@ -67,6 +68,7 @@ interface _GlobalComponents {
   'LazyHomeContent': LazyComponent<typeof import("../../components/HomeContent.vue").default>
   'LazyLoginContent': LazyComponent<typeof import("../../components/LoginContent.vue").default>
   'LazyPrivacyContent': LazyComponent<typeof import("../../components/PrivacyContent.vue").default>
+  'LazyPublicOfferContent': LazyComponent<typeof import("../../components/PublicOfferContent.vue").default>
   'LazyRocketLaunch': LazyComponent<typeof import("../../components/RocketLaunch.vue").default>
   'LazyRocketWidget': LazyComponent<typeof import("../../components/RocketWidget.vue").default>
   'LazyServicesContent': LazyComponent<typeof import("../../components/ServicesContent.vue").default>

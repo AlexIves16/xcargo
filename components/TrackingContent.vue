@@ -210,20 +210,17 @@ const sortHistory = (history) => {
 
 <style scoped>
 .tracking-content {
-  position: absolute;
-  top: 0;
-  left: 100px; 
-  z-index: 5; 
-  width: calc(100vw - 120px - 20vw);
-  height: 100vh;
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 10vh 20px 20px 20px;
-  overflow: hidden;
+  padding: 40px 20px;
   color: white;
   font-family: 'Poppins', sans-serif;
-  pointer-events: none;
+  height: auto;
 }
 
 .tracking-content * {
@@ -440,13 +437,14 @@ const sortHistory = (history) => {
   .tracking-content {
     left: 0;
     width: 100%;
-    padding: 95px 10px 140px 10px;
+    padding: 20px 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Center vertically */
+    justify-content: flex-start;
     text-align: center;
     gap: 15px;
+    height: auto;
   }
 
   .title-container {

@@ -362,11 +362,11 @@ const goToEmailAuth = () => {
   .login-content {
     left: 0;
     width: 100%;
-    padding: 95px 10px 140px 10px;
+    padding: 0px 10px 140px 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Center vertically */
+    justify-content: center;
     text-align: center;
     gap: 15px;
   }
@@ -378,7 +378,7 @@ const goToEmailAuth = () => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 100px;
+    /* padding-top: 100px; */
     text-align: center;
   }
 

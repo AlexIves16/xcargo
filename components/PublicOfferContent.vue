@@ -3,18 +3,18 @@
     
     <!-- Title Section -->
     <div class="title-container" :class="{ visible: showContent }">
-      <h1 class="main-title" :data-text="t('privacy_page.title')">
-        <span class="title-shadow">{{ t('privacy_page.title') }}</span>
-        <span class="title-front">{{ t('privacy_page.title') }}</span>
+      <h1 class="main-title" :data-text="t('public_offer_page.title')">
+        <span class="title-shadow">{{ t('public_offer_page.title') }}</span>
+        <span class="title-front">{{ t('public_offer_page.title') }}</span>
       </h1>
-      <p class="subtitle">{{ t('privacy_page.subtitle').replace('{date}', new Date().toLocaleDateString()) }}</p>
+      <p class="subtitle">{{ t('public_offer_page.subtitle').replace('{date}', new Date().toLocaleDateString()) }}</p>
     </div>
 
     <!-- Fade-in Content Wrapper -->
     <div class="content-body" :class="{ visible: showContent }">
       <div class="glass-panel">
         
-        <div v-for="(section, index) in t('privacy_page.sections')" :key="index">
+        <div v-for="(section, index) in t('public_offer_page.sections')" :key="index">
           <h2 class="section-title">{{ section.title }}</h2>
           <p class="text">{{ section.text }}</p>
           <ul v-if="section.list" class="list">
@@ -22,13 +22,9 @@
           </ul>
         </div>
 
-        <a href="https://wa.me/77087648100" target="_blank" class="whatsapp-btn">
-          {{ t('privacy_page.whatsapp') }}
-        </a>
-
         <div class="footer-link">
           <a href="#" @click.prevent="$emit('close')" class="back-link">
-             {{ t('privacy_page.back') }}
+             {{ t('public_offer_page.back') }}
           </a>
         </div>
 
@@ -219,24 +215,9 @@ onMounted(() => {
 
 @media (max-width: 1024px) {
   .privacy-content {
-    padding: 20px 15px;
-    height: auto;
+    left: 20px;
+    width: 90%;
+    padding-top: 12vh;
   }
-}
-
-.whatsapp-btn {
-  display: inline-block;
-  background: #25D366;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 20px;
-  text-decoration: none;
-  font-weight: bold;
-  margin-top: 10px;
-  transition: transform 0.2s;
-  font-size: 0.95rem;
-}
-.whatsapp-btn:hover {
-  transform: scale(1.05);
 }
 </style>

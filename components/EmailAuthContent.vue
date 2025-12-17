@@ -46,11 +46,50 @@
                 <span v-if="loading">{{ t('auth_pages.login.loading') }}</span>
                 <span v-else>{{ t('auth_pages.login.submit_btn') }}</span>
             </button>
-             <div class="back-link-container">
-               <a href="#" @click.prevent="$emit('navigate', 'login')" class="text-blue-400 hover:text-blue-300">
-                   Назад
-               </a>
+             <!-- Back Link -->
+       <div class="back-link-container">
+      <a href="#" class="back-link" @click.prevent="$emit('navigate', 'login')">
+        {{ t('auth_pages.email.back') }}
+      </a>
+    </div>
+
+    <!-- Terms Modal -->
+    <div v-if="showTermsModal" class="terms-modal-overlay">
+        <div class="terms-modal">
+            <div class="terms-header">
+                <div class="terms-tabs">
+                    <button :class="{ active: activeTermsTab === 'offer' }" @click="activeTermsTab = 'offer'">{{ t('footer.offer') }}</button>
+                    <button :class="{ active: activeTermsTab === 'privacy' }" @click="activeTermsTab = 'privacy'">{{ t('footer.privacy') }}</button>
+                </div>
+                <button class="close-btn" @click="showTermsModal = false">×</button>
             </div>
+            <div class="terms-content">
+                <div v-if="activeTermsTab === 'offer'">
+                    <h3>{{ t('public_offer_page.title') }}</h3>
+                    <div v-for="(s, i) in t('public_offer_page.sections')" :key="i">
+                        <h4>{{ s.title }}</h4>
+                        <p>{{ s.text }}</p>
+                        <ul v-if="s.list" style="padding-left: 20px;">
+                            <li v-for="l in s.list" :key="l" v-html="l"></li>
+                        </ul>
+                    </div>
+                </div>
+                <div v-else>
+                    <h3>{{ t('privacy_page.title') }}</h3>
+                    <div v-for="(s, i) in t('privacy_page.sections')" :key="i">
+                        <h4>{{ s.title }}</h4>
+                        <p>{{ s.text }}</p>
+                        <ul v-if="s.list" style="padding-left: 20px;">
+                            <li v-for="l in s.list" :key="l" v-html="l"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="terms-footer">
+                <button class="accept-btn" @click="acceptTerms">{{ t('auth_pages.email.terms_agree') }}</button>
+            </div>
+        </div>
+    </div>     
         </form>
 
         <div v-else-if="mode === 'link'">
@@ -75,12 +114,13 @@
               {{ t('auth_pages.email.open_mail') }}
           </a>
 
-          <button @click="sent = false" class="text-blue-400 hover:text-blue-300 underline">
+          <button @click="sent = false; registrationStep = 'form'" class="text-blue-400 hover:text-blue-300 underline">
             {{ t('auth_pages.email.use_other_mail') }}
           </button>
         </div>
 
-        <form v-else @submit.prevent="sendLink" class="auth-form">
+        <!-- Step 1: Form -->
+        <div v-else-if="registrationStep === 'form'" class="auth-form">
           <!-- Name Input -->
           <div class="form-group">
             <label>{{ t('auth_pages.email.name_label') }}</label>
@@ -124,22 +164,77 @@
           </div>
 
           <button 
-            type="submit" 
-            :disabled="loading"
+            @click="goToTermsStep" 
             class="action-btn primary submit-btn"
+            :disabled="!name.trim() || !email.trim()"
           >
-            <span v-if="loading">{{ t('auth_pages.email.submit_loading') }}</span>
-            <span v-else>{{ t('auth_pages.email.submit') }}</span>
+            {{ t('auth_pages.email.next_btn') || 'Далее' }}
           </button>
-
-          <div id="recaptcha-container"></div>
 
            <div class="back-link-container">
               <a href="#" @click.prevent="$emit('navigate', 'login')" class="text-blue-400 hover:text-blue-300">
                   {{ t('auth_pages.email.back') }}
               </a>
            </div>
-        </form>
+        </div>
+
+        <!-- Step 2: Terms -->
+        <div v-else-if="registrationStep === 'terms'" class="terms-step">
+          <div class="terms-scroll-container">
+            <!-- Offer Section -->
+            <div class="terms-section">
+              <h3>{{ t('public_offer_page.title') }}</h3>
+              <div v-for="(s, i) in t('public_offer_page.sections')" :key="'offer-'+i" class="terms-block">
+                <h4>{{ s.title }}</h4>
+                <p>{{ s.text }}</p>
+                <ul v-if="s.list">
+                  <li v-for="l in s.list" :key="l" v-html="l"></li>
+                </ul>
+              </div>
+            </div>
+            
+            <!-- Divider -->
+            <hr class="terms-divider" />
+            
+            <!-- Privacy Section -->
+            <div class="terms-section">
+              <h3>{{ t('privacy_page.title') }}</h3>
+              <div v-for="(s, i) in t('privacy_page.sections')" :key="'privacy-'+i" class="terms-block">
+                <h4>{{ s.title }}</h4>
+                <p>{{ s.text }}</p>
+                <ul v-if="s.list">
+                  <li v-for="l in s.list" :key="l" v-html="l"></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Agree Checkbox -->
+          <div class="terms-agree-section">
+            <label class="styled-checkbox">
+              <input type="checkbox" v-model="agreedToTerms">
+              <span class="checkmark"></span>
+              <span class="checkbox-text">{{ t('auth_pages.email.terms_agree_full') || 'Я принимаю условия публичной оферты и политики конфиденциальности' }}</span>
+            </label>
+          </div>
+
+          <div id="recaptcha-container"></div>
+
+          <button 
+            @click="sendLink" 
+            class="action-btn primary submit-btn"
+            :disabled="loading || !agreedToTerms"
+          >
+            <span v-if="!loading">{{ t('auth_pages.email.submit') }}</span>
+            <span v-else class="loader"></span>
+          </button>
+
+          <div class="back-link-container">
+            <a href="#" @click.prevent="registrationStep = 'form'" class="text-blue-400 hover:text-blue-300">
+              ← {{ t('auth_pages.email.back_to_form') || 'Назад' }}
+            </a>
+          </div>
+        </div>
         </div> <!-- End of mode === 'link' wrapper -->
 
       </div>
@@ -167,6 +262,7 @@ const { t } = useI18n()
 
 // Logic Vars
 const mode = ref('password'); // 'password' | 'link' - Default to password as per request logic ("not only reg but auth")
+const registrationStep = ref('form'); // 'form' | 'terms' - Multi-step registration flow
 const name = ref('');
 const email = ref('');
 const password = ref(''); // New
@@ -261,7 +357,34 @@ const handleFile = (event) => {
     reader.readAsDataURL(file);
 };
 
+const agreedToTerms = ref(false)
+const showTermsModal = ref(false)
+const activeTermsTab = ref('offer')
+
+const openTerms = (tab) => {
+    activeTermsTab.value = tab
+    showTermsModal.value = true
+}
+
+const acceptTerms = () => {
+    agreedToTerms.value = true
+    showTermsModal.value = false
+}
+
+// Multi-step registration: go to terms step
+const goToTermsStep = () => {
+    if (!name.value.trim() || !email.value.trim()) {
+        return;
+    }
+    registrationStep.value = 'terms';
+    // Initialize recaptcha when entering terms step
+    setTimeout(initRecaptcha, 300);
+}
+
 const sendLink = async () => {
+    if (!name.value.trim() || !email.value.trim()) return // Changed username to name
+    if (!agreedToTerms.value) return // Safety check
+
     if (!recaptchaVerified.value) {
         alert('Пожалуйста, подтвердите, что вы не робот (капча)');
         return;
@@ -582,7 +705,7 @@ const loginWithPassword = async () => {
   .email-content {
     left: 0;
     width: 100%;
-    padding: 95px 10px 140px 10px;
+    padding: 0px 10px 140px 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -598,7 +721,7 @@ const loginWithPassword = async () => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 100px;
+    /* padding-top: 100px; */
     text-align: center;
   }
 
@@ -653,5 +776,118 @@ const loginWithPassword = async () => {
   .success-title {
     font-size: 2rem;
   }
+}
+
+/* Terms Step Styles */
+.terms-step {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.terms-scroll-container {
+  max-height: 50vh;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.terms-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+.terms-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+.terms-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.4);
+  border-radius: 3px;
+}
+
+.terms-section h3 {
+  color: #818CF8;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.terms-block {
+  margin-bottom: 15px;
+}
+
+.terms-block h4 {
+  color: #c7d2fe;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.terms-block p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.terms-block ul {
+  padding-left: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+}
+
+.terms-divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 20px 0;
+}
+
+/* Styled Checkbox */
+.terms-agree-section {
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.styled-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.styled-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.styled-checkbox .checkmark {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.styled-checkbox input[type="checkbox"]:checked + .checkmark {
+  background: linear-gradient(135deg, #4F46E5, #2563EB);
+  border-color: #4F46E5;
+}
+
+.styled-checkbox input[type="checkbox"]:checked + .checkmark::after {
+  content: '✓';
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.styled-checkbox .checkbox-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 </style>

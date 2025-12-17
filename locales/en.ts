@@ -20,7 +20,12 @@ export default {
         calc_btn: 'Calculate Cost',
         track_btn_hero: '🔍 Track',
         whatsapp_btn: '📱 WhatsApp',
-        install_btn: 'Install App'
+        install_btn: 'Install App',
+        ios_install_title: 'Install on iPhone',
+        ios_install_desc: 'To install this app, tap the "Share" button in your browser:',
+        ios_install_step1: 'Tap "Share" button',
+        ios_install_step2: 'Select "Add to Home Screen"',
+        close: 'Close'
     },
     home: {
         b2c: {
@@ -220,6 +225,7 @@ export default {
         links: 'Links',
         contacts: 'Contacts',
         privacy: 'Privacy Policy',
+        offer: 'Public Offer',
         phone: 'Phone'
     },
     admin: {
@@ -310,6 +316,86 @@ export default {
         whatsapp: '📱 Write on WhatsApp',
         back: '← Back to Home'
     },
+    public_offer_page: {
+        title: 'PUBLIC OFFER',
+        subtitle: 'User Agreement and Terms of Service',
+        sections: [
+            {
+                title: '1. General Provisions',
+                text: '1.1. The Company provides services for the acceptance, consolidation, storage, and delivery of goods.\n1.2. The Company is not a manufacturer or seller of goods but provides exclusively logistics services.\n1.3. The User bears full responsibility for the accuracy of information about the goods.'
+            },
+            {
+                title: '2. Responsibility for Goods',
+                text: '2.1. The User is obliged to notify the Company in advance if the goods are:',
+                list: [
+                    'fragile;',
+                    'easily damaged;',
+                    'require additional packaging or crating.'
+                ]
+            },
+            {
+                title: '',
+                text: '2.2. If the User did not warn about the fragility of the goods (e.g., glass, mirror, ceramics, etc.), ➡️ all responsibility for possible damage lies with the User.\n\n2.3. The Company is not responsible for damage to goods if:',
+                list: [
+                    'crating was not ordered;',
+                    'User refused additional packaging;',
+                    'information about the goods was provided incorrectly.'
+                ]
+            },
+            {
+                title: '3. Crating and Additional Packaging',
+                text: '3.1. Crating is an additional paid service.\n3.2. The decision on the necessity of crating is made by the User.\n3.3. In case of refusal of crating, the User assumes all risks associated with possible damage to the goods.'
+            },
+            {
+                title: '4. Prohibited Goods 🚫',
+                text: 'The Company does not accept or transport the following categories of goods:',
+                list: [
+                    '🔴 Weapons, ammunition, their parts',
+                    '🔴 Narcotic, psychotropic substances',
+                    '🔴 Explosive, flammable substances',
+                    '🔴 Liquids without factory packaging',
+                    '🔴 Batteries and accumulators without approval',
+                    '🔴 Money, bank cards, securities',
+                    '🔴 Gold, silver, precious stones',
+                    '🔴 Alcohol, tobacco products',
+                    '🔴 Medicines',
+                    '🔴 Biological materials',
+                    '🔴 Goods prohibited by the laws of RK and the country of departure'
+                ]
+            },
+            {
+                title: '',
+                text: '⚠️ In case of detection of prohibited goods, all responsibility (fines, confiscation, delays) lies with the User.'
+            },
+            {
+                title: '5. Delivery Terms',
+                text: '5.1. The indicated delivery times are indicative.\n5.2. Delays are possible for reasons beyond the Company\'s control:',
+                list: [
+                    'customs checks;',
+                    'weather conditions;',
+                    'actions of third parties.'
+                ]
+            },
+            {
+                title: '6. Personal Data and Privacy 🔐',
+                text: '6.1. The User agrees to the processing of their personal data: full name, phone number, data on goods and delivery.\n6.2. Data is used solely for providing services and is not transferred to third parties, except as required by law.'
+            },
+            {
+                title: '7. Final Provisions',
+                text: '7.1. The fact of registration on the site and checking the box "I agree to the terms" means:',
+                list: [
+                    'full acceptance of the offer terms;',
+                    'agreement with transportation rules;',
+                    'agreement with the distribution of liability.'
+                ]
+            },
+            {
+                title: '',
+                text: '7.2. The Company reserves the right to make changes to the offer terms without prior notice.'
+            }
+        ],
+        back: '← Back to Home'
+    },
     auth_pages: {
         login: {
             title: 'LOGIN',
@@ -346,8 +432,15 @@ export default {
             avatar_label: 'Profile Photo',
             upload_btn: 'Choose photo',
             hint: 'JPG, PNG or GIF (max 5MB)',
+            terms_agree: 'I accept the terms of',
+            terms_offer: 'Public Offer',
+            terms_and: 'and',
+            terms_privacy: 'Privacy Policy',
             submit: 'Send Link',
             submit_loading: 'Sending...',
+            next_btn: 'Next',
+            terms_agree_full: 'I accept the terms of the Public Offer and Privacy Policy',
+            back_to_form: 'Back',
             back: '← Back to Login',
             error_file_size: 'File too large (>5MB)'
         },

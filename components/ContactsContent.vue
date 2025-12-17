@@ -106,20 +106,17 @@ onMounted(() => {
 
 <style scoped>
 .contacts-content {
-  position: absolute;
-  top: 0;
-  left: 100px; 
-  z-index: 20; 
-  width: calc(100vw - 120px - 20vw);
-  height: 100vh;
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 10vh 20px 20px 20px;
-  overflow: hidden;
+  padding: 40px 20px;
   color: white;
   font-family: 'Poppins', sans-serif;
-  pointer-events: none;
+  height: auto;
 }
 
 .contacts-content * {
@@ -209,7 +206,7 @@ onMounted(() => {
 
 .contacts-wrapper {
   display: flex;
-  height: 60vh; /* Fixed height area */
+  min-height: 40vh; /* Minimum height for map area */
   gap: 30px;
 }
 
@@ -315,11 +312,10 @@ onMounted(() => {
   .contacts-content {
     left: 0;
     width: 100%;
-    overflow-y: scroll; /* Enable full page scroll */
+    overflow-y: visible; /* Enable full page scroll */
     -webkit-overflow-scrolling: touch;
-    height: 100vh;
-    padding-top: 95px;
-    padding-bottom: 300px; /* Ample bottom space */
+    height: auto;
+    padding-bottom: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -334,8 +330,8 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 15px; /* Reduced since sticky header isn't here */
-    margin-top: 80px;
+    padding-top: 0px;
+    margin-top: 0px;
   }
 
   .main-title {

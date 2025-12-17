@@ -124,14 +124,17 @@
         </div>
 
         <div v-else class="tracks-list">
-          <div v-for="track in activeTracks" :key="track.id" class="track-item">
+          <div v-for="track in activeTracks" :key="track.id" class="track-item" @click="track.expanded = !track.expanded">
             <div class="track-info">
               <div class="track-header">
                 <span class="track-number">{{ track.number }}</span>
                 <span v-if="track.description" class="track-desc-badge">{{ track.description }}</span>
               </div>
-              <span class="track-date">{{ t('dashboard.added') }} {{ formatDate(track.createdAt) }}</span>
+              <span class="mobile-chevron" :class="{ rotated: track.expanded }">▼</span>
             </div>
+            
+            <div class="track-details" :class="{ expanded: track.expanded }">
+              <span class="track-date">{{ t('dashboard.added') }} {{ formatDate(track.createdAt) }}</span>
             
             <div class="track-actions">
                 <div class="status-group">
@@ -176,9 +179,17 @@
                     </div>
                 </div>
             </div>
+            </div> <!-- End track-details -->
 
           </div>
         </div>
+      </div>
+
+      <!-- Mobile Legal Links -->
+      <div class="mobile-legal-links">
+          <a href="#" @click.prevent="$emit('navigate', 'privacy')">{{ t('footer.privacy') }}</a>
+          <span class="divider">•</span>
+          <a href="#" @click.prevent="$emit('navigate', 'public-offer')">{{ t('footer.offer') }}</a>
       </div>
 
     </div>
@@ -495,7 +506,7 @@ const getStatusColor = (status) => {
   left: 100px;
   width: calc(100vw - 120px - 20vw);
   height: 100vh;
-  padding: 15vh 40px 40px 40px;
+  padding: 0vh 40px 40px 40px;
   overflow: hidden; /* No scroll on main container */
   color: white;
   font-family: 'Poppins', sans-serif;
@@ -971,7 +982,7 @@ const getStatusColor = (status) => {
   .dashboard-content {
      left: 0; 
      width: 100%;
-     padding-top: 100px; /* Reduced top padding */
+     padding-top: 0;
      padding-bottom: 20px;
      padding-left: 15px;
      padding-right: 15px;
@@ -1034,25 +1045,49 @@ const getStatusColor = (status) => {
       display: flex;
       flex-direction: column;
       flex: 1;
-      overflow: hidden; /* Prevent body scroll */
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
       gap: 15px;
   }
+  
+  @media (max-width: 1024px) {
+      .dashboard-main {
+          min-height: auto;
+      }
+  }
+
+  /* Main Area */
 
   /* Form Visibility */
-  .add-track-panel {
-      order: -1; /* Ensure on top if shown */
-      padding: 15px;
-      margin-bottom: 0;
+  .track-details.expanded {
+      display: flex;
   }
-  .add-track-panel.hidden-mobile {
-      display: none;
+
+  .mobile-legal-links {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px;
+      margin-top: auto;
+      opacity: 0.6;
+      font-size: 0.8rem;
   }
+  .mobile-legal-links a {
+      color: white;
+      text-decoration: none;
+  }
+  .mobile-legal-links .divider {
+      color: rgba(255,255,255,0.3);
+  }
+
+   /* Main Area */
 
   /* List Scroll - Critical Fix */
   .list-panel {
       flex: 1;
       height: auto;
-      min-height: 0;
+      min-height: auto;
       display: flex;
       flex-direction: column;
       margin-bottom: 0; /* No margin bottom to avoid push */
@@ -1062,7 +1097,9 @@ const getStatusColor = (status) => {
   
   .tracks-list {
       flex: 1;
-      overflow-y: auto;
+      overflow-y: visible; /* Let the page scroll it */
+      height: auto;
+
       padding-right: 5px;
       -webkit-overflow-scrolling: touch;
       padding-bottom: 50px; /* Extra inner cushion */
@@ -1082,14 +1119,14 @@ const getStatusColor = (status) => {
   }
 
   .track-info {
-      padding-right: 40px; /* Space for delete button */
+      padding-right: 70px; /* Increased space for both buttons */
       width: 100%;
   }
 
   .delete-btn {
       position: absolute;
       top: 10px;
-      right: 10px;
+      right: 45px; /* Moved left to avoid chevron overlap */
       font-size: 1.4rem;
       padding: 5px;
   }
@@ -1128,6 +1165,52 @@ const getStatusColor = (status) => {
       margin-top: 5px;
       color: #cbd5e1;
   }
+  /* Mobile Accordion */
+  .mobile-chevron {
+      display: block;
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 1rem;
+      color: #94a3b8;
+      transition: transform 0.3s;
+  }
+  .mobile-chevron.rotated {
+      transform: rotate(180deg);
+  }
+
+  .track-details {
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+      margin-top: 10px;
+  }
+  .track-details.expanded {
+      display: flex;
+  }
+
+  .track-header {
+      width: 100%;
+      justify-content: space-between; /* Number left, chevron right */
+  }
+  
+  .track-item {
+      cursor: pointer;
+  }
+}
+
+/* Desktop Defaults */
+@media (min-width: 1025px) {
+    .mobile-chevron {
+        display: none;
+    }
+    .track-details {
+        display: contents; /* Use contents to keep original layout flow on desktop */
+    }
+    .mobile-legal-links {
+        display: none;
+    }
 }
 .mobile-only { display: none; }
 

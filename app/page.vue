@@ -1,9 +1,9 @@
 <template>
-  <div class="relative w-full h-screen overflow-hidden">
+  <div class="relative w-full h-screen lg:h-screen h-[100dvh] flex flex-col overflow-hidden">
     <!-- Splash Screen -->
     <RocketLaunch v-if="showSplash" @loaded="showSplash = false" />
-
-    <!-- Background gradient (kept from previous code, though WavesHeader has its own bg) -->
+    
+    <!-- Background (Absolute, behind everything) -->
     <div class="absolute inset-0 w-full h-full" 
          :style="{
            background: `linear-gradient(135deg, hsl(${backgroundHue1}, ${backgroundSaturation1}%, ${backgroundLightness1}%), hsl(${backgroundHue2}, ${backgroundSaturation2}%, ${backgroundLightness2}%))`
@@ -38,34 +38,35 @@
     <VerticalSidebar :active-key="currentView" @select="onMenuSelect" />
     
     <!-- Main Content Area -->
-    <HomeContent v-if="currentView === 'home'" :trigger-anim="!showSplash" @navigate="navigateTo" />
-    <ServicesContent v-if="currentView === 'services'" :trigger-anim="!showSplash" />
-    <AboutContent v-if="currentView === 'about'" :trigger-anim="!showSplash" />
-    <ContactsContent v-if="currentView === 'contacts'" :trigger-anim="!showSplash" />
-    <TrackingContent v-if="currentView === 'tracking'" :trigger-anim="!showSplash" />
-    <PrivacyContent v-if="currentView === 'privacy'" :trigger-anim="!showSplash" @close="goHome" />
-    <LoginContent v-if="currentView === 'login'" :trigger-anim="!showSplash" @navigate="navigateTo" />
-    <EmailAuthContent v-if="currentView === 'email-auth'" :trigger-anim="!showSplash" @navigate="navigateTo" />
-    <AuthFinishContent v-if="currentView === 'auth-finish'" @navigate="navigateTo" />
-    <ClientOnly>
-      <DashboardContent v-if="currentView === 'dashboard'" :trigger-anim="!showSplash" @navigate="navigateTo" />
-    </ClientOnly>
-    <ClientOnly>
-      <AdminContent v-if="currentView === 'admin'" :trigger-anim="!showSplash" @navigate="navigateTo" />
-    </ClientOnly>
+    <!-- Header (Static) -->
+    <div class="relative z-50 pointer-events-auto">
+      <WavesHeader @logo-click="goHome" />
+    </div>
 
-    <!-- Animated Header (Overlay) -->
-    <div class="relative z-50 w-full h-full flex flex-col justify-between pointer-events-none">
-      <div class="pointer-events-auto">
-        <WavesHeader @logo-click="goHome" />
-      </div>
-      
-      <!-- Main Content Area (Spacer for now) -->
-      <div class="flex-grow"></div>
+    <!-- Main Content Area (Scrollable Internal) -->
+    <!-- Main Content Area (Scrollable Internal) -->
+    <main class="flex-1 relative w-full overflow-y-auto z-10 scroll-container">
+        <HomeContent v-if="currentView === 'home'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+        <ServicesContent v-if="currentView === 'services'" :trigger-anim="!showSplash" />
+        <AboutContent v-if="currentView === 'about'" :trigger-anim="!showSplash" />
+        <ContactsContent v-if="currentView === 'contacts'" :trigger-anim="!showSplash" />
+        <TrackingContent v-if="currentView === 'tracking'" :trigger-anim="!showSplash" />
+        <PrivacyContent v-if="currentView === 'privacy'" :trigger-anim="!showSplash" @close="goHome" />
+        <PublicOfferContent v-if="currentView === 'public-offer'" :trigger-anim="!showSplash" @close="goHome" />
+        <LoginContent v-if="currentView === 'login'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+        <EmailAuthContent v-if="currentView === 'email-auth'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+        <AuthFinishContent v-if="currentView === 'auth-finish'" @navigate="navigateTo" />
+        <ClientOnly>
+          <DashboardContent v-if="currentView === 'dashboard'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+        </ClientOnly>
+        <ClientOnly>
+          <AdminContent v-if="currentView === 'admin'" :trigger-anim="!showSplash" @navigate="navigateTo" />
+        </ClientOnly>
+    </main>
 
-      <div class="pointer-events-auto footer-wrapper">
-        <WavesFooter @privacy-click="goToPrivacy" />
-      </div>
+    <!-- Footer (Static Bottom) - lifted on mobile for menu -->
+    <div class="relative z-40 pointer-events-auto mt-auto pb-[60px] lg:pb-0 bg-transparent">
+      <WavesFooter @privacy-click="goToPrivacy" @offer-click="goToPublicOffer" />
     </div>
 
   </div>
@@ -85,6 +86,7 @@ import AboutContent from '../components/AboutContent.vue'
 import ContactsContent from '../components/ContactsContent.vue'
 import TrackingContent from '../components/TrackingContent.vue'
 import PrivacyContent from '../components/PrivacyContent.vue'
+import PublicOfferContent from '../components/PublicOfferContent.vue'
 import LoginContent from '../components/LoginContent.vue'
 import EmailAuthContent from '../components/EmailAuthContent.vue'
 import AuthFinishContent from '../components/AuthFinishContent.vue'
@@ -138,6 +140,11 @@ const goToPrivacy = () => {
   if (typeof window !== 'undefined') window.history.pushState({ view: 'privacy' }, '', '/privacy')
 }
 
+const goToPublicOffer = () => {
+    currentView.value = 'public-offer'
+    if (typeof window !== 'undefined') window.history.pushState({ view: 'public-offer' }, '', '/public-offer')
+}
+
 const goToLogin = () => {
   currentView.value = 'login'
   if (typeof window !== 'undefined') window.history.pushState({ view: 'login' }, '', '/login')
@@ -167,6 +174,8 @@ const handlePopState = () => {
       currentView.value = 'tracking'
     } else if (window.location.pathname === '/privacy') {
       currentView.value = 'privacy'
+    } else if (window.location.pathname === '/public-offer') {
+      currentView.value = 'public-offer'
     } else if (window.location.pathname === '/login') {
       currentView.value = 'login'
     } else if (window.location.pathname === '/auth/email') {
@@ -235,6 +244,8 @@ onMounted(() => {
     currentView.value = 'tracking'
   } else if (window.location.pathname === '/privacy') {
     currentView.value = 'privacy'
+  } else if (window.location.pathname === '/public-offer') {
+    currentView.value = 'public-offer'
   } else if (window.location.pathname === '/login') {
     currentView.value = 'login'
   } else if (window.location.pathname === '/auth/email') {

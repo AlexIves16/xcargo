@@ -25,6 +25,7 @@ export const GoogleRecaptcha: typeof import("../components/GoogleRecaptcha.vue")
 export const HomeContent: typeof import("../components/HomeContent.vue").default
 export const LoginContent: typeof import("../components/LoginContent.vue").default
 export const PrivacyContent: typeof import("../components/PrivacyContent.vue").default
+export const PublicOfferContent: typeof import("../components/PublicOfferContent.vue").default
 export const RocketLaunch: typeof import("../components/RocketLaunch.vue").default
 export const RocketWidget: typeof import("../components/RocketWidget.vue").default
 export const ServicesContent: typeof import("../components/ServicesContent.vue").default
@@ -67,6 +68,7 @@ export const LazyGoogleRecaptcha: LazyComponent<typeof import("../components/Goo
 export const LazyHomeContent: LazyComponent<typeof import("../components/HomeContent.vue").default>
 export const LazyLoginContent: LazyComponent<typeof import("../components/LoginContent.vue").default>
 export const LazyPrivacyContent: LazyComponent<typeof import("../components/PrivacyContent.vue").default>
+export const LazyPublicOfferContent: LazyComponent<typeof import("../components/PublicOfferContent.vue").default>
 export const LazyRocketLaunch: LazyComponent<typeof import("../components/RocketLaunch.vue").default>
 export const LazyRocketWidget: LazyComponent<typeof import("../components/RocketWidget.vue").default>
 export const LazyServicesContent: LazyComponent<typeof import("../components/ServicesContent.vue").default>

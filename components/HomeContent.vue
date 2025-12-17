@@ -18,7 +18,7 @@
         <p class="subtitle">{{ t('hero.desc') }}</p>
         
         <div class="buttons-row">
-          <button v-if="!isPwaInstalled && deferredPrompt" class="cta-btn primary" @click="installPwa">
+          <button v-if="!isPwaInstalled && (deferredPrompt || isIOS)" class="cta-btn primary" @click="installPwa">
              <!-- Install Icon -->
              <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -69,6 +69,25 @@
 
       </div>
     </div>
+    
+    <!-- iOS Install Modal -->
+    <div v-if="showIOSInstruction" class="ios-modal-overlay" @click="showIOSInstruction = false">
+      <div class="ios-modal" @click.stop>
+        <h3>{{ t('hero.ios_install_title') }}</h3>
+        <p>{{ t('hero.ios_install_desc') }}</p>
+        <div class="ios-steps">
+            <div class="step">
+                <span class="step-icon">📤</span>
+                <span>{{ t('hero.ios_install_step1') }}</span>
+            </div>
+            <div class="step">
+                <span class="step-icon">➕</span>
+                <span>{{ t('hero.ios_install_step2') }}</span>
+            </div>
+        </div>
+        <button class="close-btn" @click="showIOSInstruction = false">{{ t('hero.close') }}</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -107,8 +126,14 @@ watch(() => props.triggerAnim, (val) => {
 
 const deferredPrompt = ref(null)
 const isPwaInstalled = ref(false)
+const isIOS = ref(false)
+const showIOSInstruction = ref(false)
 
 const installPwa = async () => {
+  if (isIOS.value) {
+      showIOSInstruction.value = true
+      return
+  }
   if (deferredPrompt.value) {
     deferredPrompt.value.prompt()
     const { outcome } = await deferredPrompt.value.userChoice
@@ -125,6 +150,9 @@ onMounted(() => {
       window.navigator.standalone === true) {
     isPwaInstalled.value = true
   }
+
+  // Detect iOS
+  isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault()
@@ -151,20 +179,17 @@ onMounted(() => {
 
 <style scoped>
 .home-content {
-  position: absolute;
-  top: 0;
-  left: 100px; 
-  z-index: 20; 
-  width: calc(100vw - 120px - 20vw);
-  height: 100vh;
+  position: relative; /* Changed from absolute */
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0vh 20px 20px 20px;
-  overflow: hidden;
+  padding: 40px 20px;
   color: white;
   font-family: 'Poppins', sans-serif;
-  pointer-events: none;
+  min-height: 100%; /* Ensure it fills at least the container */
 }
 
 .home-content * {
@@ -347,17 +372,10 @@ onMounted(() => {
 
 @media (max-width: 1024px) {
   .home-content {
-    left: 0;
-    width: 100%;
-    padding: 120px 15px 130px 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    padding: 20px 15px;
     align-items: center;
     text-align: center;
-    overflow-y: auto; /* Enable full page scroll */
-    justify-content: flex-start; /* Start content at top */
-    -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+    min-height: auto;
   }
   .home-content::-webkit-scrollbar { display: none; } /* Hide scrollbar */
   .title-container {
@@ -449,5 +467,68 @@ onMounted(() => {
   }
   
   /* .info-grid::-webkit-scrollbar { display: none; } - Not needed if not scrolling */
+
+  /* iOS Modal Styles */
+  .ios-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+  }
+  .ios-modal {
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 20px;
+    width: 85%;
+    max-width: 350px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .ios-modal h3 {
+    margin: 0 0 15px 0;
+    color: #3b82f6;
+  }
+  .ios-modal p {
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      color: #cbd5e1;
+  }
+  .ios-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 25px;
+  }
+  .step {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      border-radius: 10px;
+      text-align: left;
+      font-size: 0.9rem;
+  }
+  .step-icon {
+      font-size: 1.5rem;
+  }
+  .close-btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 30px;
+      border-radius: 10px;
+      font-weight: bold;
+      width: 100%;
+  }
 }
 </style>

@@ -73,20 +73,17 @@ onMounted(() => {
 
 <style scoped>
 .about-content {
-  position: absolute;
-  top: 0;
-  left: 100px; 
-  z-index: 5; 
-  width: calc(100vw - 120px - 20vw);
-  height: 100vh;
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 15vh 20px 20px 20px;
-  overflow: hidden;
+  padding: 40px 20px;
   color: white;
   font-family: 'Poppins', sans-serif;
-  pointer-events: none;
+  height: auto;
 }
 
 .about-content * {
@@ -169,9 +166,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 20px;
   max-width: 900px;
-  height: 100%;
-  overflow-y: auto; /* Allow scroll if needed on small screens */
-  padding-right: 10px; /* Space for scrollbar */
+  padding-right: 0;
 }
 
 .content-body::-webkit-scrollbar {
@@ -267,14 +262,11 @@ onMounted(() => {
 
 @media (max-width: 1024px) {
   .about-content {
-    left: 0;
-    width: 100%;
-    padding: 95px 10px 140px 10px;
-    display: flex;
-    flex-direction: column;
+    padding: 20px 15px;
     align-items: center;
     text-align: center;
     gap: 15px;
+    height: auto;
   }
 
   .title-container {
@@ -301,8 +293,8 @@ onMounted(() => {
 
   .content-body {
     width: 100%;
-    max-height: none;
-    overflow-y: auto;
+    height: auto;
+    overflow-y: visible;
     padding-right: 0;
     gap: 20px;
   }
@@ -334,8 +326,9 @@ onMounted(() => {
   /* Grid */
   .principles-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    width: 100%;
   }
 
   .card {

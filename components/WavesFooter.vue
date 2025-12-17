@@ -8,6 +8,7 @@
         <div class="footer-content">
           <p class="footer-text">© 2025 CargoXpress. {{ t('footer.rights') }}</p>
           <a href="#" class="privacy-link" @click.prevent="$emit('privacy-click')">{{ t('footer.privacy') }}</a>
+          <a href="#" class="privacy-link" @click.prevent="$emit('offer-click')">{{ t('footer.offer') }}</a>
           <p class="footer-initials">ROM</p>
         </div>
       </div>
@@ -49,7 +50,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 
-const emit = defineEmits(['privacy-click'])
+const emit = defineEmits(['privacy-click', 'offer-click'])
 const { t } = useI18n()
 const showControls = ref(false)
 
@@ -288,17 +289,8 @@ p {
 
 /*Shrinking for mobile*/
 @media (max-width: 768px) {
-  .waves {
-    height: 40px;
-    min-height: 40px;
-  }
-
-  .content {
-    height: 30vh;
-  }
-
-  h1 {
-    font-size: 24px;
+  .header {
+    display: none;
   }
 }
 </style>
