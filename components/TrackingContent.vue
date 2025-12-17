@@ -454,7 +454,7 @@ const sortHistory = (history) => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 90px;
+    /* padding-top: 90px; */
   }
 
   .main-title {

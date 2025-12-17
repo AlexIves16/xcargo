@@ -1,6 +1,6 @@
 ```
 <template>
-  <div>
+  <div class="footer-wrapper">
     <div class="header">
       <!--Content before waves-->
       <div class="inner-header flex">
@@ -291,6 +291,29 @@ p {
 @media (max-width: 768px) {
   .header {
     display: none;
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  
+  .inner-header {
+    display: none;
+    height: 0;
+  }
+  
+  .waves {
+    display: none;
+  }
+}
+
+.footer-wrapper {
+  /* Desktop default */
+}
+
+@media (max-width: 768px) {
+  .footer-wrapper {
+    display: none !important;
+    height: 0 !important;
   }
 }
 </style>

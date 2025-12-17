@@ -34,7 +34,7 @@
         </div>
         <div class="cta-buttons">
           <a href="https://wa.me/77087648100" target="_blank" class="btn whatsapp">{{ t('services_page.cta.whatsapp') }}</a>
-          <button class="btn login">{{ t('services_page.cta.login') }}</button>
+          <a href="/login" class="btn login">{{ t('services_page.cta.login') }}</a>
         </div>
       </div>
 
@@ -299,18 +299,18 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 15px; /* Reduced since sticky header isn't here, but keeping consistent */
-    margin-top: 80px; /* Space for logo/header */
+    padding-top: 15px;
+    /* margin-top: 80px; */
   }
 
   /* Grid */
   .services-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px; 
+    grid-template-columns: 1fr;
+    gap: 15px; 
     width: 100%;
     max-height: none;
-    overflow-y: visible; /* Disable nested scroll */
+    overflow-y: visible;
     flex-grow: 0;
     padding-bottom: 20px;
     height: auto;

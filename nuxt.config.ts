@@ -16,6 +16,16 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         { name: 'apple-mobile-web-app-title', content: 'CargoXpress' },
+        // SEO meta tags for bot indexing
+        { name: 'robots', content: 'index, follow' },
+        { name: 'description', content: 'Xcargo - Доставка грузов из Китая в Казахстан. Быстро, надежно, для бизнеса и частных лиц. Отслеживание посылок, карго доставка.' },
+        { name: 'keywords', content: 'доставка из китая, карго казахстан, грузоперевозки, taobao, 1688, alibaba, отслеживание посылок' },
+        // Open Graph for social sharing
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: 'Xcargo - Доставка из Китая в Казахстан' },
+        { property: 'og:description', content: 'Доставка грузов из Китая в Казахстан. Быстро, надежно, для бизнеса и частных лиц.' },
+        { property: 'og:site_name', content: 'Xcargo' },
+        { property: 'og:locale', content: 'ru_RU' },
       ],
       link: [
         { rel: 'manifest', href: '/manifest.json' },
@@ -24,10 +34,48 @@ export default defineNuxtConfig({
     }
   },
 
-  // CSP headers for production
+  // Route rules: CSP + Caching for performance and SEO
   routeRules: {
+    // Static assets - cache for 30 days (immutable)
+    '/_nuxt/**': {
+      headers: {
+        'Cache-Control': 'public, max-age=2592000, immutable'
+      }
+    },
+    // Images - cache for 30 days
+    '/icons/**': {
+      headers: {
+        'Cache-Control': 'public, max-age=2592000'
+      }
+    },
+    '/images/**': {
+      headers: {
+        'Cache-Control': 'public, max-age=2592000'
+      }
+    },
+    // Dynamic pages - NO cache (user data, tracking)
+    '/dashboard/**': {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    },
+    '/tracking/**': {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    },
+    '/admin/**': {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    },
+    '/auth/**': {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    },
+    '/login': {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    },
+    '/api/**': {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    },
+    // Pages - cache for 1 hour, allow bot indexing
     '/**': {
       headers: {
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
         'Content-Security-Policy': [
           "default-src 'self'",
           "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://api-maps.yandex.ru https://yandex.ru https://www.google.com",
