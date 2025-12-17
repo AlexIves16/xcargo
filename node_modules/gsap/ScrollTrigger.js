@@ -1,5 +1,5 @@
 /*!
- * ScrollTrigger 3.14.1
+ * ScrollTrigger 3.14.2
  * https://gsap.com
  *
  * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -2222,7 +2222,7 @@ export var ScrollTrigger = /*#__PURE__*/function () {
 
   return ScrollTrigger;
 }();
-ScrollTrigger.version = "3.14.1";
+ScrollTrigger.version = "3.14.2";
 
 ScrollTrigger.saveStyles = function (targets) {
   return targets ? _toArray(targets).forEach(function (target) {

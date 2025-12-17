@@ -1,5 +1,5 @@
 /*!
- * Observer 3.14.1
+ * Observer 3.14.2
  * https://gsap.com
  *
  * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -428,7 +428,7 @@ export class Observer {
 
 }
 
-Observer.version = "3.14.1";
+Observer.version = "3.14.2";
 Observer.create = vars => new Observer(vars);
 Observer.register = _initCore;
 Observer.getAll = () => _observers.slice();

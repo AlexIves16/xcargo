@@ -91,6 +91,7 @@ declare namespace SplitText {
     prepareText?: PrepareTextFunction;
     onSplit?: (splitText: SplitText) => void;
     onRevert?: (splitText: SplitText) => void;
+    overwrite?: boolean;
   }
 }
 

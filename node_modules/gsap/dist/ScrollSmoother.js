@@ -21,7 +21,7 @@
   }
 
   /*!
-   * ScrollSmoother 3.14.1
+   * ScrollSmoother 3.14.2
    * https://gsap.com
    *
    * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -953,7 +953,7 @@
 
     return ScrollSmoother;
   }();
-  ScrollSmoother.version = "3.14.1";
+  ScrollSmoother.version = "3.14.2";
 
   ScrollSmoother.create = function (vars) {
     return _mainInstance && vars && _mainInstance.content() === _toArray(vars.content)[0] ? _mainInstance : new ScrollSmoother(vars);

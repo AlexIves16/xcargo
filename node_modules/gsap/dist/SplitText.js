@@ -1,5 +1,5 @@
 /*!
- * SplitText 3.14.1
+ * SplitText 3.14.2
  * https://gsap.com
  *
  * @license Copyright 2025, GreenSock. All rights reserved. Subject to the terms at https://gsap.com/standard-license.
@@ -12,11 +12,18 @@
 	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.window = global.window || {}));
 })(this, (function (exports) { 'use strict';
 
-	let gsap, _fonts, _coreInitted, _initIfNecessary = () => _coreInitted || SplitText.register(window.gsap), _charSegmenter = typeof Intl !== "undefined" && "Segmenter" in Intl ? new Intl.Segmenter() : 0, _toArray = (r) => typeof r === "string" ? _toArray(document.querySelectorAll(r)) : "length" in r ? Array.from(r) : [r], _elements = (targets) => _toArray(targets).filter((e) => e instanceof HTMLElement), _emptyArray = [], _context = function() {
+	let gsap, _fonts, _splitProp = typeof Symbol === "function" ? Symbol() : "_split", _coreInitted, _initIfNecessary = () => _coreInitted || SplitText.register(window.gsap), _charSegmenter = typeof Intl !== "undefined" && "Segmenter" in Intl ? new Intl.Segmenter() : 0, _toArray = (r) => typeof r === "string" ? _toArray(document.querySelectorAll(r)) : "length" in r ? Array.from(r).reduce((acc, cur) => {
+	  typeof cur === "string" ? acc.push(..._toArray(cur)) : acc.push(cur);
+	  return acc;
+	}, []) : [r], _elements = (targets) => _toArray(targets).filter((e) => e instanceof HTMLElement), _emptyArray = [], _context = function() {
 	}, _defaultContext = { add: (f) => f() }, _spacesRegEx = /\s+/g, _emojiSafeRegEx = new RegExp("\\p{RI}\\p{RI}|\\p{Emoji}(\\p{EMod}|\\u{FE0F}\\u{20E3}?|[\\u{E0020}-\\u{E007E}]+\\u{E007F})?(\\u{200D}\\p{Emoji}(\\p{EMod}|\\u{FE0F}\\u{20E3}?|[\\u{E0020}-\\u{E007E}]+\\u{E007F})?)*|.", "gu"), _emptyBounds = { left: 0, top: 0, width: 0, height: 0 }, _findNextValidBounds = (allBounds, startIndex) => {
 	  while (++startIndex < allBounds.length && allBounds[startIndex] === _emptyBounds) {
 	  }
 	  return allBounds[startIndex] || _emptyBounds;
+	}, _revertOriginal = ({ element, html, ariaL, ariaH }) => {
+	  element.innerHTML = html;
+	  ariaL ? element.setAttribute("aria-label", ariaL) : element.removeAttribute("aria-label");
+	  ariaH ? element.setAttribute("aria-hidden", ariaH) : element.removeAttribute("aria-hidden");
 	}, _stretchToFitSpecialChars = (collection, specialCharsRegEx) => {
 	  if (specialCharsRegEx) {
 	    let charsFound = new Set(collection.join("").match(specialCharsRegEx) || _emptyArray), i = collection.length, slots, word, char, combined;
@@ -171,6 +178,11 @@
 	    this.lines = [];
 	    this.masks = [];
 	    this.vars = config;
+	    this.elements.forEach((el) => {
+	      var _a;
+	      config.overwrite !== false && ((_a = el[_splitProp]) == null ? void 0 : _a._data.orig.filter(({ element }) => element === el).forEach(_revertOriginal));
+	      el[_splitProp] = this;
+	    });
 	    this._split = () => this.isSplit && this.split(this.vars);
 	    let orig = [], timerId, checkWidths = () => {
 	      let i = orig.length, o;
@@ -292,20 +304,18 @@
 	  }
 	  revert() {
 	    var _a, _b;
-	    let { orig, anim } = this._data;
-	    this.kill();
-	    orig.forEach(({ element, html, ariaL, ariaH }) => {
-	      element.innerHTML = html;
-	      ariaL ? element.setAttribute("aria-label", ariaL) : element.removeAttribute("aria-label");
-	      ariaH ? element.setAttribute("aria-hidden", ariaH) : element.removeAttribute("aria-hidden");
-	    });
-	    this.chars.length = this.words.length = this.lines.length = orig.length = this.masks.length = 0;
-	    this.isSplit = false;
-	    if (anim) {
-	      this._data.animTime = anim.totalTime();
-	      anim.revert();
+	    if (this.isSplit) {
+	      let { orig, anim } = this._data;
+	      this.kill();
+	      orig.forEach(_revertOriginal);
+	      this.chars.length = this.words.length = this.lines.length = orig.length = this.masks.length = 0;
+	      this.isSplit = false;
+	      if (anim) {
+	        this._data.animTime = anim.totalTime();
+	        anim.revert();
+	      }
+	      (_b = (_a = this.vars).onRevert) == null ? void 0 : _b.call(_a, this);
 	    }
-	    (_b = (_a = this.vars).onRevert) == null ? void 0 : _b.call(_a, this);
 	    return this;
 	  }
 	  static create(elements, config) {
@@ -323,7 +333,7 @@
 	    }
 	  }
 	};
-	_SplitText.version = "3.14.1";
+	_SplitText.version = "3.14.2";
 	let SplitText = _SplitText;
 
 	exports.SplitText = SplitText;

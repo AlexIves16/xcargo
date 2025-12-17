@@ -255,8 +255,8 @@ export default {
             error_timeout: 'Уақыт бітті',
             error_tg_open: 'Telegram ашу қатесі. Қайталап көріңіз.',
 
-            tab_password: 'Құпия сөзбен кіру',
-            tab_link: 'Сілтеме арқылы кіру',
+            tab_password: 'Кіру',
+            tab_link: 'Тіркелу',
             email_label: 'Email',
             email_placeholder: 'name@example.com',
             password_label: 'Құпия сөз',

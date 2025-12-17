@@ -77,7 +77,7 @@ const toggleControls = () => {
 </script>
 
 <style scoped>
-@import url(//fonts.googleapis.com/css?family=Lato:300:400);
+@import url(https://fonts.googleapis.com/css?family=Lato:300:400);
 
 .controls-panel {
     position: fixed;

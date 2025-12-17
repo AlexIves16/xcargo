@@ -1,5 +1,5 @@
 /*!
- * MorphSVGPlugin 3.14.1
+ * MorphSVGPlugin 3.14.2
  * https://gsap.com
  *
  * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -615,7 +615,7 @@ let gsap, _toArray, _lastLinkedAnchor, _doc, _coreInitted, PluginClass, _reverti
 
 
 export const MorphSVGPlugin = {
-	version: "3.14.1",
+	version: "3.14.2",
 	name: "morphSVG",
 	rawVars: 1, // otherwise "render" would be interpreted as a function-based value.
 	register(core, Plugin) {

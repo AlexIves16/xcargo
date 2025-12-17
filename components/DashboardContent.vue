@@ -58,21 +58,21 @@
       <div class="stat-card">
         <div class="stat-icon">📦</div>
         <div class="stat-info">
-          <span class="stat-value">{{ tracks.length }}</span>
+          <span class="stat-value">{{ totalCount }}</span>
           <span class="stat-label">Всего посылок</span>
         </div>
       </div>
       <div class="stat-card blue">
         <div class="stat-icon">🚚</div>
         <div class="stat-info">
-          <span class="stat-value">{{ tracks.filter(t => t.status === 'in_transit').length }}</span>
+          <span class="stat-value">{{ transitCount }}</span>
           <span class="stat-label">В пути</span>
         </div>
       </div>
       <div class="stat-card green">
         <div class="stat-icon">✅</div>
         <div class="stat-info">
-          <span class="stat-value">{{ tracks.filter(t => t.status === 'delivered').length }}</span>
+          <span class="stat-value">{{ deliveredCount }}</span>
           <span class="stat-label">Доставлено</span>
         </div>
       </div>
@@ -118,13 +118,13 @@
           <p>{{ t('dashboard.loading') }}</p>
         </div>
 
-        <div v-else-if="tracks.length === 0" class="empty-state">
+        <div v-else-if="activeTracks.length === 0" class="empty-state">
           <span class="empty-icon">📭</span>
           <p>{{ t('dashboard.no_parcels') }}</p>
         </div>
 
         <div v-else class="tracks-list">
-          <div v-for="track in tracks" :key="track.id" class="track-item">
+          <div v-for="track in activeTracks" :key="track.id" class="track-item">
             <div class="track-info">
               <div class="track-header">
                 <span class="track-number">{{ track.number }}</span>
@@ -208,6 +208,18 @@ const { t } = useI18n()
 const newTrackNumber = ref('')
 const newTrackDescription = ref('')
 const tracks = ref([])
+const activeTracks = computed(() => tracks.value.filter(t => !t.isDeleted))
+
+const isDelivered = (track) => {
+    const s = (track.lastSecondaryStatus || '') + ' ' + (track.lastChinaStatus || '')
+    const lower = s.toLowerCase()
+    return lower.includes('дата получ') || lower.includes('date of receipt') || lower.includes('выдан') || lower.includes('delivered') || lower.includes('доставлен')
+}
+
+const totalCount = computed(() => activeTracks.value.length)
+const deliveredCount = computed(() => tracks.value.filter(t => isDelivered(t)).length)
+const transitCount = computed(() => activeTracks.value.filter(t => !isDelivered(t)).length)
+
 const loading = ref(false)
 const loadingData = ref(true)
 const error = ref('')
@@ -246,11 +258,29 @@ const fetchData = () => {
       orderBy('createdAt', 'desc')
     )
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       tracks.value = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }))
+      
+      // Sync Stats to User Profile
+      if (currentUser.value) {
+          try {
+             const userRef = doc($db, 'users', currentUser.value.uid)
+             await updateDoc(userRef, {
+                 stats: {
+                     total: totalCount.value,
+                     transit: transitCount.value,
+                     delivered: deliveredCount.value,
+                     updatedAt: serverTimestamp()
+                 }
+             })
+          } catch (e) {
+              console.error("Error syncing stats:", e)
+          }
+      }
+
       loadingData.value = false
     }, (err) => {
       console.error("Error fetching tracks:", err)
@@ -423,7 +453,10 @@ const addTrackNumber = async () => {
 const deleteTrack = async (id) => {
   if (!confirm(t('dashboard.confirm_delete'))) return
   try {
-    await deleteDoc(doc($db, 'tracks', id))
+    await updateDoc(doc($db, 'tracks', id), {
+        isDeleted: true,
+        deletedAt: serverTimestamp()
+    })
   } catch (e) {
     console.error("Error deleting track:", e)
     alert(t('dashboard.error_delete') || 'Error')
@@ -738,6 +771,7 @@ const getStatusColor = (status) => {
   justify-content: space-between;
   align-items: center;
   transition: background 0.2s;
+  flex-wrap: wrap; /* Allow history to wrap */
 }
 
 .track-item:hover {
@@ -1036,6 +1070,63 @@ const getStatusColor = (status) => {
   
   .empty-state {
       padding: 20px;
+  }
+
+  /* Mobile Track Item Restyle */
+  .track-item {
+      flex-direction: column;
+      align-items: stretch;
+      position: relative;
+      gap: 15px;
+      padding-bottom: 15px;
+  }
+
+  .track-info {
+      padding-right: 40px; /* Space for delete button */
+      width: 100%;
+  }
+
+  .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.4rem;
+      padding: 5px;
+  }
+
+  .track-actions {
+      width: 100%;
+      flex-direction: column;
+      gap: 10px;
+  }
+
+  .status-group {
+      width: 100%;
+      align-items: stretch;
+      gap: 8px;
+  }
+
+  .status-row {
+      width: 100%;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+  }
+
+  .status-badge {
+      font-size: 0.9rem;
+  }
+
+  .history-toggle-btn {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05); /* Button-like appearance */
+      border-radius: 10px;
+      text-align: center;
+      margin-top: 5px;
+      color: #cbd5e1;
   }
 }
 .mobile-only { display: none; }

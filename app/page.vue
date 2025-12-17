@@ -11,24 +11,27 @@
     </div>
     
     <!-- Plexus Globe (Background) -->
-    <PlexusGlobe
-      class="absolute inset-0 w-full h-full"
-      :scale="BASE_SETTINGS.scale"
-      :position-x="globePositionX"
-      :position-y="BASE_SETTINGS.positionY"
-      :rotation-speed="BASE_SETTINGS.rotationSpeed"
-      :flicker-intensity="BASE_SETTINGS.flickerIntensity"
-      :gradient-intensity="BASE_SETTINGS.gradientIntensity"
-      :connection-switching="BASE_SETTINGS.connectionSwitching"
-      :connection-quantity="BASE_SETTINGS.connectionQuantity"
-      :white-intensity="BASE_SETTINGS.whiteIntensity"
-      :cyan-intensity="BASE_SETTINGS.cyanIntensity"
-      :blue-intensity="BASE_SETTINGS.blueIntensity"
-      :purple-intensity="BASE_SETTINGS.purpleIntensity"
-      :purple-hue="BASE_SETTINGS.purpleHue"
-      :blue-hue="BASE_SETTINGS.blueHue"
-      :cyan-hue="BASE_SETTINGS.cyanHue"
-    />
+    <!-- Plexus Globe (Background) -->
+    <ClientOnly>
+      <PlexusGlobe
+        class="absolute inset-0 w-full h-full"
+        :scale="BASE_SETTINGS.scale"
+        :position-x="globePositionX"
+        :position-y="BASE_SETTINGS.positionY"
+        :rotation-speed="BASE_SETTINGS.rotationSpeed"
+        :flicker-intensity="BASE_SETTINGS.flickerIntensity"
+        :gradient-intensity="BASE_SETTINGS.gradientIntensity"
+        :connection-switching="BASE_SETTINGS.connectionSwitching"
+        :connection-quantity="BASE_SETTINGS.connectionQuantity"
+        :white-intensity="BASE_SETTINGS.whiteIntensity"
+        :cyan-intensity="BASE_SETTINGS.cyanIntensity"
+        :blue-intensity="BASE_SETTINGS.blueIntensity"
+        :purple-intensity="BASE_SETTINGS.purpleIntensity"
+        :purple-hue="BASE_SETTINGS.purpleHue"
+        :blue-hue="BASE_SETTINGS.blueHue"
+        :cyan-hue="BASE_SETTINGS.cyanHue"
+      />
+    </ClientOnly>
 
     <!-- Sidebar Menu -->
     <!-- Sidebar Menu -->
@@ -43,7 +46,7 @@
     <PrivacyContent v-if="currentView === 'privacy'" :trigger-anim="!showSplash" @close="goHome" />
     <LoginContent v-if="currentView === 'login'" :trigger-anim="!showSplash" @navigate="navigateTo" />
     <EmailAuthContent v-if="currentView === 'email-auth'" :trigger-anim="!showSplash" @navigate="navigateTo" />
-    <AuthFinishContent v-if="currentView === 'auth-finish'" />
+    <AuthFinishContent v-if="currentView === 'auth-finish'" @navigate="navigateTo" />
     <ClientOnly>
       <DashboardContent v-if="currentView === 'dashboard'" :trigger-anim="!showSplash" @navigate="navigateTo" />
     </ClientOnly>

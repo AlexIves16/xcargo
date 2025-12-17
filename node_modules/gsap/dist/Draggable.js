@@ -2982,7 +2982,7 @@
   });
 
   Draggable.zIndex = 1000;
-  Draggable.version = "3.14.1";
+  Draggable.version = "3.14.2";
   _getGSAP() && gsap.registerPlugin(Draggable);
 
   exports.Draggable = Draggable;

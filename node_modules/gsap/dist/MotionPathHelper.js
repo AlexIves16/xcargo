@@ -2813,11 +2813,11 @@
 	  };
 	};
 
-	PathEditor.version = "3.14.1";
+	PathEditor.version = "3.14.2";
 	PathEditor.register = _initCore;
 
 	/*!
-	 * MotionPathHelper 3.14.1
+	 * MotionPathHelper 3.14.2
 	 * https://gsap.com
 	 *
 	 * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -3185,7 +3185,7 @@
 	  return PathEditor.create(path, vars);
 	};
 
-	MotionPathHelper.version = "3.14.1";
+	MotionPathHelper.version = "3.14.2";
 
 	exports.MotionPathHelper = MotionPathHelper;
 	exports.default = MotionPathHelper;

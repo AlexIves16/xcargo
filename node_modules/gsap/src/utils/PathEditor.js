@@ -1,5 +1,5 @@
 /*!
- * PathEditor 3.14.1
+ * PathEditor 3.14.2
  * https://gsap.com
  *
  * Copyright 2008-2025, GreenSock. All rights reserved.
@@ -1309,7 +1309,7 @@ PathEditor.getSnapFunction = (vars) => { //{gridSize, radius, x, y, width, heigh
 	};
 };
 
-PathEditor.version = "3.14.1";
+PathEditor.version = "3.14.2";
 
 PathEditor.register = _initCore;
 

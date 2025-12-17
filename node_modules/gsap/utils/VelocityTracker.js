@@ -1,5 +1,5 @@
 /*!
- * VelocityTracker: 3.14.1
+ * VelocityTracker: 3.14.2
  * https://gsap.com
  *
  * Copyright 2008-2025, GreenSock. All rights reserved.

@@ -378,18 +378,18 @@ const goToEmailAuth = () => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 90px;
+    padding-top: 100px;
     text-align: center;
   }
 
   .main-title {
-    font-size: 4.3rem;
-    line-height: 1;
+    font-size: 2rem;
+    line-height: 1.1;
   }
 
   .subtitle {
-    font-size: 1.6rem;
-    padding: 24px;
+    font-size: 0.9rem;
+    padding: 10px;
     margin: 0;
     line-height: 1.2;
   }
@@ -408,19 +408,19 @@ const goToEmailAuth = () => {
   }
   
   .auth-btn {
-    padding: 30px;
-    font-size: 2rem; /* Large but fits text */
-    border-radius: 16px;
-    gap: 20px;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 12px;
+    gap: 10px;
   }
 
   .icon {
-    width: 40px;
-    height: 40px;
+    width: 20px;
+    height: 20px;
   }
 
   .error-msg {
-    font-size: 1.4rem;
+    font-size: 0.9rem;
   }
 }
 </style>

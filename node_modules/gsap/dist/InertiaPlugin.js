@@ -240,7 +240,7 @@
 	_getGSAP() && gsap.registerPlugin(VelocityTracker);
 
 	/*!
-	 * InertiaPlugin 3.14.1
+	 * InertiaPlugin 3.14.2
 	 * https://gsap.com
 	 *
 	 * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -581,7 +581,7 @@
 	};
 
 	var InertiaPlugin = {
-	  version: "3.14.1",
+	  version: "3.14.2",
 	  name: "inertia",
 	  register: function register(core) {
 	    gsap$1 = core;

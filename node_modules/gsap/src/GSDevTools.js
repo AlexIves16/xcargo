@@ -1,5 +1,5 @@
 /*!
- * GSDevTools 3.14.1
+ * GSDevTools 3.14.2
  * https://gsap.com
  *
  * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -1156,7 +1156,7 @@ let gsap, _coreInitted, _doc, _docEl, _win, _recordedRoot, Animation, _rootTween
 
 
 
-GSDevTools.version = "3.14.1";
+GSDevTools.version = "3.14.2";
 GSDevTools.globalRecordingTime = 2;
 
 GSDevTools.getById = id => id ? _lookup[id] : _rootInstance;

@@ -1,5 +1,5 @@
 /*!
- * SplitText 3.14.1
+ * SplitText 3.14.2
  * https://gsap.com
  *
  * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -42,6 +42,7 @@ export interface SplitTextConfig {
 	prepareText?: PrepareTextFunction;
 	onSplit?: (splitText: SplitText) => void;
 	onRevert?: (splitText: SplitText) => void;
+	overwrite?: boolean; // whether to overwrite the element if it has been split before
 }
 
 // Function Types
@@ -66,10 +67,11 @@ interface SplitTextOriginal {
 
 let gsap: any, 
 	_fonts: FontFaceSet | undefined, 
+	_splitProp: symbol | string = typeof Symbol === "function" ? Symbol() : "_split",
 	_coreInitted: boolean, // set to true when the GSAP core is registered
 	_initIfNecessary = () => _coreInitted || SplitText.register((window as any).gsap),
 	_charSegmenter: any = typeof Intl !== "undefined" && "Segmenter" in Intl ? new (Intl as any).Segmenter() : 0, // not all older browsers support Intl.Segmenter
-	_toArray = (r: string | NodeList | Node | Node[]): Node[] => typeof r === "string" ? _toArray(document.querySelectorAll(r)) : "length" in r ? Array.from(r) : [r],
+	_toArray = (r: string | NodeList | Node | Node[]): Node[] => typeof r === "string" ? _toArray(document.querySelectorAll(r)) : "length" in r ? Array.from(r).reduce((acc: Node[], cur: Node | string) => { typeof cur === "string" ? acc.push(..._toArray(cur)) : acc.push(cur); return acc; }, []) : [r],
 	_elements = (targets: SplitTextTarget): HTMLElement[] => _toArray(targets).filter((e) => e instanceof HTMLElement) as HTMLElement[],
 	_emptyArray: string[] = [],
 	_context: ContextFunction = function() {},
@@ -84,6 +86,11 @@ let gsap: any,
 	_findNextValidBounds = (allBounds: BoundingRect[], startIndex: number): BoundingRect => { // searches through the allBounds Array to find the next non-empty bounds after the startIndex (non-inclusive). Returns the empty bounds if no valid bounds are found.
 		while (++startIndex < allBounds.length && allBounds[startIndex] === _emptyBounds) {}
 		return allBounds[startIndex] || _emptyBounds;
+	},
+	_revertOriginal = ({element, html, ariaL, ariaH}: SplitTextOriginal): void => {
+		element.innerHTML = html;
+		ariaL ? element.setAttribute("aria-label", ariaL) : element.removeAttribute("aria-label");
+		ariaH ? element.setAttribute("aria-hidden", ariaH) : element.removeAttribute("aria-hidden");
 	},
 
 	// custom word split function that allows for a callback to specify the delimiter replacement
@@ -315,6 +322,10 @@ export class SplitText {
 		this.lines = [];
 		this.masks = [];
 		this.vars = config;
+		this.elements.forEach((el: HTMLElement) => { // avoid re-splitting the same element multiple times
+			config.overwrite !== false && (el as any)[_splitProp]?._data.orig.filter(({element}: SplitTextOriginal) => element === el).forEach(_revertOriginal);
+			(el as any)[_splitProp] = this; // set the split prop to the current instance
+		});
 		this._split = () => this.isSplit && this.split(this.vars);
 		let orig: SplitTextOriginal[] = [],
 			timerId: number,
@@ -470,20 +481,18 @@ export class SplitText {
 	}
 
 	revert() {
-		let {orig, anim} = this._data;
-		this.kill();
-		orig.forEach(({element, html, ariaL, ariaH}) => {
-			element.innerHTML = html;
-			ariaL ? element.setAttribute("aria-label", ariaL) : element.removeAttribute("aria-label");
-			ariaH ? element.setAttribute("aria-hidden", ariaH) : element.removeAttribute("aria-hidden");
-		});
-		this.chars.length = this.words.length = this.lines.length = orig.length = this.masks.length = 0;
-		this.isSplit = false;
-		if (anim) {  // if the user returned an animation in the onSplit, we record the totalTime() here and revert() it and then we'll the totalTime() of the newly returned onSplit animation. This allows things to be seamless
-			this._data.animTime = anim.totalTime();
-			anim.revert(); 
+		if (this.isSplit) {
+			let {orig, anim} = this._data;
+			this.kill();
+			orig.forEach(_revertOriginal);
+			this.chars.length = this.words.length = this.lines.length = orig.length = this.masks.length = 0;
+			this.isSplit = false;
+			if (anim) {  // if the user returned an animation in the onSplit, we record the totalTime() here and revert() it and then we'll the totalTime() of the newly returned onSplit animation. This allows things to be seamless
+				this._data.animTime = anim.totalTime();
+				anim.revert(); 
+			}
+			this.vars.onRevert?.(this);
 		}
-		this.vars.onRevert?.(this);
 		return this;
 	}
 
@@ -503,7 +512,7 @@ export class SplitText {
 		}
 	}
 
-	static readonly version: string = "3.14.1";
+	static readonly version: string = "3.14.2";
 }
 
 export { SplitText as default };

@@ -55,6 +55,14 @@
                  class="input-field"
                  placeholder="Новый пароль (минимум 6 символов)"
              />
+             <input 
+                 v-model="passwordConfirm"
+                 type="password" 
+                 required
+                 minlength="6"
+                 class="input-field"
+                 placeholder="Повторите пароль"
+             />
              <button type="submit" class="action-btn primary">
                  Сохранить и войти
              </button>
@@ -77,12 +85,14 @@ import { useI18n } from '@/composables/useI18n'
 const { $auth } = useNuxtApp();
 const router = useRouter();
 const { t } = useI18n()
+const emit = defineEmits(['navigate']);
 
 const processing = ref(true);
 const waitingForEmail = ref(false);
 const settingPassword = ref(false); // New state
 const emailInput = ref('');
 const passwordInput = ref('');
+const passwordConfirm = ref('');
 const error = ref('');
 
 const goToEmail = () => {
@@ -184,9 +194,13 @@ const savePassword = async () => {
         alert('Пароль должен быть не менее 6 символов');
         return;
     }
+    if (passwordInput.value !== passwordConfirm.value) {
+        alert('Пароли не совпадают');
+        return;
+    }
     try {
         await updatePassword($auth.currentUser, passwordInput.value);
-        router.push('/dashboard');
+        emit('navigate', 'dashboard');
     } catch (e) {
         console.error('Password set error:', e);
         alert('Ошибка сохранения пароля: ' + e.message);
@@ -194,7 +208,7 @@ const savePassword = async () => {
 };
 
 const skipPassword = () => {
-    router.push('/dashboard');
+    emit('navigate', 'dashboard');
 };
 </script>
 

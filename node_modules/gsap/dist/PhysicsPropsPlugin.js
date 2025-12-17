@@ -5,7 +5,7 @@
 }(this, (function (exports) { 'use strict';
 
 	/*!
-	 * PhysicsPropsPlugin 3.14.1
+	 * PhysicsPropsPlugin 3.14.2
 	 * https://gsap.com
 	 *
 	 * @license Copyright 2008-2025, GreenSock. All rights reserved.
@@ -57,7 +57,7 @@
 	};
 
 	var PhysicsPropsPlugin = {
-	  version: "3.14.1",
+	  version: "3.14.2",
 	  name: "physicsProps",
 	  register: _initCore,
 	  init: function init(target, value, tween) {

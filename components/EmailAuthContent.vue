@@ -132,6 +132,8 @@
             <span v-else>{{ t('auth_pages.email.submit') }}</span>
           </button>
 
+          <div id="recaptcha-container"></div>
+
            <div class="back-link-container">
               <a href="#" @click.prevent="$emit('navigate', 'login')" class="text-blue-400 hover:text-blue-300">
                   {{ t('auth_pages.email.back') }}
@@ -146,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { sendSignInLinkToEmail, signInWithEmailAndPassword } from 'firebase/auth'; // Added import
 import { useI18n } from '@/composables/useI18n'
 
@@ -160,6 +162,7 @@ const emit = defineEmits(['navigate'])
 
 const showContent = ref(false)
 const { $auth } = useNuxtApp()
+const config = useRuntimeConfig()
 const { t } = useI18n()
 
 // Logic Vars
@@ -170,6 +173,8 @@ const password = ref(''); // New
 const avatarPreview = ref(null);
 const loading = ref(false);
 const sent = ref(false);
+const recaptchaVerified = ref(false);
+const recaptchaWidgetId = ref(null);
 
 // Animation
 watch(() => props.triggerAnim, (val) => {
@@ -178,6 +183,39 @@ watch(() => props.triggerAnim, (val) => {
 onMounted(() => {
   if (props.triggerAnim) setTimeout(() => { showContent.value = true }, 100)
 })
+
+const initRecaptcha = () => {
+    if (recaptchaWidgetId.value !== null) return;
+    
+    // Ensure container exists
+    nextTick(() => {
+        const container = document.getElementById('recaptcha-container');
+        if (container && window.grecaptcha) {
+             grecaptcha.ready(() => {
+                try {
+                    recaptchaWidgetId.value = grecaptcha.render('recaptcha-container', {
+                        'sitekey': config.public.recaptchaSiteKey,
+                        'callback': (response) => {
+                            recaptchaVerified.value = !!response;
+                        },
+                        'expired-callback': () => {
+                            recaptchaVerified.value = false;
+                        }
+                    });
+                } catch (e) {
+                    // Already rendered or error
+                    console.log('Recaptcha render error or already rendered', e);
+                }
+             });
+        }
+    });
+};
+
+watch(mode, (newMode) => {
+    if (newMode === 'link') {
+        setTimeout(initRecaptcha, 500); // Give time for transition
+    }
+});
 
 const mailProviderLink = computed(() => {
     if (!email.value) return null;
@@ -224,6 +262,10 @@ const handleFile = (event) => {
 };
 
 const sendLink = async () => {
+    if (!recaptchaVerified.value) {
+        alert('Пожалуйста, подтвердите, что вы не робот (капча)');
+        return;
+    }
     loading.value = true;
     
     try {
@@ -279,8 +321,8 @@ const loginWithPassword = async () => {
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
-  padding: 15vh 20px 20px 20px;
-  overflow-y: auto; /* Allow scroll if form is long */
+  padding: 10vh 20px 20px 20px;
+  overflow: hidden; /* Remove scrollbar */
   color: white;
   font-family: 'Poppins', sans-serif;
   pointer-events: auto;
@@ -304,7 +346,7 @@ const loginWithPassword = async () => {
   position: relative;
   font-family: helvetica, arial, sans-serif;
   font-weight: 800;
-  font-size: clamp(2em, 4vw, 4em);
+  font-size: clamp(1.5em, 3vw, 3em);
   line-height: 1em;
   margin: 0;
   padding: 0;
@@ -353,7 +395,7 @@ const loginWithPassword = async () => {
   transform: translateY(30px);
   transition: opacity 1s ease 0.3s, transform 1s ease 0.3s;
   width: 100%;
-  max-width: 500px;
+  max-width: 400px; /* Reduced width */
 }
 
 .content-body.visible {
@@ -364,7 +406,7 @@ const loginWithPassword = async () => {
 .glass-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 30px;
+  padding: 20px; /* Reduced padding */
   border-radius: 20px;
   backdrop-filter: blur(10px);
   width: 100%;
@@ -373,7 +415,7 @@ const loginWithPassword = async () => {
 .tabs-header {
   display: flex;
   gap: 10px;
-  margin-bottom: 25px;
+  margin-bottom: 15px; /* Reduced margin */
   border-bottom: 1px solid rgba(255,255,255,0.1);
   padding-bottom: 10px;
 }
@@ -404,7 +446,7 @@ const loginWithPassword = async () => {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px; /* Reduced gap */
 }
 
 .form-group label {
@@ -416,7 +458,7 @@ const loginWithPassword = async () => {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 12px 15px;
+  padding: 8px 12px; /* Reduced padding */
   color: white;
   font-size: 1rem;
   outline: none;
@@ -480,7 +522,7 @@ const loginWithPassword = async () => {
 /* Buttons */
 .action-btn {
   width: 100%;
-  padding: 14px;
+  padding: 10px; /* Reduced padding */
   border: none;
   border-radius: 12px;
   font-size: 1rem;
@@ -529,7 +571,7 @@ const loginWithPassword = async () => {
 
 .back-link-container {
   text-align: center;
-  margin-top: 10px;
+  /* margin-top: 10px; removed */
 }
 
 .hidden {
@@ -556,18 +598,18 @@ const loginWithPassword = async () => {
     align-items: center;
     margin-bottom: 0;
     padding-bottom: 20px;
-    padding-top: 90px;
+    padding-top: 100px;
     text-align: center;
   }
 
   .main-title {
-    font-size: 4.3rem;
-    line-height: 1;
+    font-size: 2rem;
+    line-height: 1.1;
   }
 
   .subtitle {
-    font-size: 1.6rem;
-    padding: 24px;
+    font-size: 0.9rem;
+    padding: 10px;
     margin: 0;
     line-height: 1.2;
   }
@@ -587,21 +629,21 @@ const loginWithPassword = async () => {
   }
 
   .form-group label {
-    font-size: 1.4rem;
+    font-size: 0.9rem;
     text-align: left;
     width: 100%;
   }
 
   .input-field {
-    padding: 30px;
-    font-size: 2rem;
-    border-radius: 16px;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 10px;
   }
 
   .action-btn {
-    padding: 30px;
-    font-size: 2rem;
-    border-radius: 16px;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 10px;
   }
   
   .hint {
