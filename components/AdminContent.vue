@@ -198,10 +198,12 @@
                        />
                     </th>
                     <th>{{ t('admin.table.track') }}</th>
+                    <th>{{ t('admin.table.desc') || 'Описание' }}</th>
                     <th>{{ t('admin.col_china_status') || 'Статус (Китай)' }}</th>
                     <th>{{ t('admin.col_second_status') || 'Статус (Второй)' }}</th>
                     <th>{{ t('admin.table.date') }}</th>
                     <th>{{ t('admin.table.name') }}</th>
+                    <th>{{ t('admin.table.email') || 'Email' }}</th>
                     <th class="text-right">{{ t('admin.table.actions') }}</th>
                  </tr>
               </thead>
@@ -216,6 +218,7 @@
                        />
                     </td>
                     <td class="font-mono">{{ track.number }}</td>
+                    <td class="desc-cell">{{ track.description || '-' }}</td>
                     
                     <!-- China Status -->
                     <td>
@@ -232,7 +235,8 @@
                     </td>
 
                     <td class="text-sm date-cell">{{ formatDate(track.createdAt) }}</td>
-                    <td>{{ track.userName || '-' }}</td>
+                    <td class="user-cell">{{ track.userName || '-' }}</td>
+                    <td class="email-cell">{{ track.userEmail || '-' }}</td>
                     
                     <td class="text-right">
                        <button @click="deleteTrack(track.id)" class="delete-icon-btn" title="Удалить">
@@ -669,13 +673,14 @@ onUnmounted(() => {
 
 <style scoped>
 .admin-content {
-  position: absolute;
-  top: 0;
-  left: 100px; /* Aligned with dashboard */
-  width: calc(100vw - 120px - 20vw); /* Responsive width similar to dashboard */
-  height: 100vh;
-  padding: 15vh 40px 40px 40px;
-  overflow: hidden; /* No scroll on main container */
+  position: relative;
+  width: 100%;
+  max-width: calc(100vw - 120px - 20vw);
+  min-height: 100%;
+  padding: 20px 40px 40px 40px;
+  margin-left: 100px;
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden;
   color: white;
   font-family: 'Poppins', sans-serif;
   pointer-events: auto;
@@ -978,7 +983,7 @@ onUnmounted(() => {
 .status-select option { background: #1e1e2e; color: white; }
 
 .desc-cell {
-  max-width: 200px;
+  max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -988,6 +993,23 @@ onUnmounted(() => {
 .date-cell {
   white-space: nowrap;
   color: #64748b;
+}
+
+.user-cell {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #cbd5e1;
+}
+
+.email-cell {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #94a3b8;
+  font-size: 0.85rem;
 }
 
 .delete-icon-btn {
@@ -1033,9 +1055,22 @@ onUnmounted(() => {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 768px) {
-  .admin-content { left: 0; width: 100%; padding: 100px 20px 20px 20px; }
+  .admin-content { 
+    position: relative;
+    left: 0; 
+    width: 100%; 
+    max-width: 100%;
+    margin-left: 0;
+    padding: 20px 15px 100px 15px;
+    min-height: 100%;
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
   .table-header { flex-direction: column; align-items: flex-start; }
   .table-controls { width: 100%; justify-content: space-between; }
-  .desc-cell, .date-cell { display: none; }
+  .date-cell, .email-cell { display: none; }
+  .desc-cell, .user-cell { max-width: 80px; }
 }
 </style>
