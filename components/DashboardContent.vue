@@ -517,13 +517,14 @@ const getStatusColor = (status) => {
 
 <style scoped>
 .dashboard-content {
-  position: absolute;
-  top: 0;
-  left: 100px;
-  width: calc(100vw - 120px - 20vw);
-  height: 100vh;
-  padding: 0vh 40px 40px 40px;
-  overflow: hidden; /* No scroll on main container */
+  position: relative;
+  width: 100%;
+  max-width: calc(100vw - 120px - 20vw);
+  min-height: 100%;
+  padding: 20px 40px 40px 40px;
+  margin-left: 100px;
+  overflow-y: auto; /* Enable scrolling */
+  overflow-x: hidden;
   color: white;
   font-family: 'Poppins', sans-serif;
   pointer-events: auto;
@@ -1002,16 +1003,22 @@ const getStatusColor = (status) => {
   }
 
   .dashboard-content {
+     position: relative; /* Remove absolute to allow normal flow */
      left: 0; 
      width: 100%;
+     max-width: 100%; /* Override desktop max-width */
+     margin-left: 0; /* Override desktop margin-left */
      padding-top: 0;
      padding-bottom: 20px;
      padding-left: 15px;
      padding-right: 15px;
-     height: 100vh;
-     overflow: hidden;
+     min-height: 100%;
+     height: auto; /* Allow content to determine height */
+     overflow-y: auto; /* Enable vertical scrolling */
+     overflow-x: hidden;
      display: flex;
      flex-direction: column;
+     -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
   }
 
   /* Compact Header */
