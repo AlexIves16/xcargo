@@ -24,6 +24,9 @@ declare module "nitropack/types" {
     '/api/auth/telegram': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/telegram.post').default>>>>
     }
+    '/api/debug/set-webhook': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/debug/set-webhook.get').default>>>>
+    }
     '/api/debug/webhook-status': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/debug/webhook-status.get').default>>>>
     }

@@ -30,6 +30,13 @@
           <button class="cta-btn secondary" @click="$emit('navigate', 'tracking')">{{ t('hero.track_btn_hero') }}</button>
           <a href="https://wa.me/77087648100" target="_blank" class="cta-btn whatsapp">{{ t('hero.whatsapp_btn') }}</a>
         </div>
+        
+        <!-- Privacy & Offer Links -->
+        <div class="legal-links">
+          <a href="#" class="legal-link" @click.prevent="$emit('navigate', 'privacy')">{{ t('footer.privacy') }}</a>
+          <span class="legal-separator">|</span>
+          <a href="#" class="legal-link" @click.prevent="$emit('navigate', 'public-offer')">{{ t('footer.offer') }}</a>
+        </div>
       </div>
 
       <!-- Info Grid -->
@@ -331,6 +338,31 @@ onMounted(() => {
   box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
 }
 
+/* Legal Links (Privacy & Offer) */
+.legal-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+  font-size: 0.8rem;
+}
+
+.legal-link {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.legal-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+.legal-separator {
+  color: rgba(255, 255, 255, 0.3);
+}
+
 /* Compact Grid */
 .info-grid {
   display: grid;
@@ -429,6 +461,14 @@ onMounted(() => {
   }
   .btn-icon {
      display: none !important;
+  }
+  
+  /* Legal Links - Mobile */
+  .legal-links {
+    justify-content: center;
+    font-size: 0.7rem;
+    margin-top: 10px;
+    margin-bottom: 5px;
   }
 
   /* 2-Column Grid - reduced */
