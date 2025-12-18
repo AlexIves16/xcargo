@@ -18,11 +18,13 @@
         
         <!-- Info Panel -->
         <div class="info-panel">
-          <div class="info-item">
+          <div class="info-item address-block">
             <div class="icon-box">📍</div>
             <div class="details">
               <h3>{{ t('contacts_page.address_title') }}</h3>
-              <p>{{ t('contacts_page.address') }}</p>
+              <ul class="address-list">
+                <li v-for="(addr, idx) in addressList" :key="idx">{{ addr }}</li>
+              </ul>
             </div>
           </div>
 
@@ -47,7 +49,7 @@
           <!-- Social Buttons -->
           <div class="social-row">
             <a href="https://wa.me/77087648100" target="_blank" class="btn whatsapp">{{ t('contacts_page.whatsapp_btn') }}</a>
-            <a href="https://instagram.com" target="_blank" class="btn instagram">{{ t('contacts_page.instagram_btn') }}</a>
+            <a href="https://www.instagram.com/xpress_cargo_almaty?igsh=MWdzY244Y3M1NDR2cg%3D%3D&utm_source=qr" target="_blank" class="btn instagram">{{ t('contacts_page.instagram_btn') }}</a>
           </div>
         </div>
 
@@ -74,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps({
@@ -86,6 +88,11 @@ const props = defineProps({
 
 const showContent = ref(false)
 const { t } = useI18n()
+
+const addressList = computed(() => {
+  const addr = t('contacts_page.address')
+  return addr.split('\n').filter(a => a.trim())
+})
 
 watch(() => props.triggerAnim, (val) => {
   if (val) {
@@ -263,6 +270,27 @@ onMounted(() => {
   font-size: 0.85rem;
   color: #a5b4fc;
   margin-top: 3px;
+}
+
+.address-block {
+  align-items: flex-start;
+}
+
+.address-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.address-list li {
+  color: white;
+  font-size: 0.95rem;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.address-list li:last-child {
+  border-bottom: none;
 }
 
 .social-row {

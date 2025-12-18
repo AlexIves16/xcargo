@@ -141,13 +141,13 @@ export default {
     contacts_page: {
         title: 'CONTACTS',
         subtitle: 'Contact us in any convenient way',
-        address_title: 'Our Address',
-        address: '26 Altynsarin St, Almaty, Kazakhstan',
+        address_title: 'Our Addresses',
+        address: '1. 26 Altynsarin St, Almaty\n2. Timiryazeva 53\n3. Shugyla City 340/4\n4. Shugyla City 340/33 bld. 4\n5. Zhetysu 1, 46a\n6. Severnoe Koltso Highway 29/5a\n7. Zerdeli 1/153',
         phone_title: 'Phones',
         phone_sub: '(Whatsapp / Telegram)',
         schedule_title: 'Working Hours',
-        schedule_days: 'Mon-Sat: 09:00 - 18:00',
-        schedule_off: 'Sunday - Closed',
+        schedule_days: 'Wed-Sun: 10:00 - 20:00',
+        schedule_off: 'Monday, Tuesday - Closed',
         whatsapp_btn: 'Chat on WhatsApp',
         instagram_btn: 'Instagram'
     },
@@ -171,6 +171,8 @@ export default {
         pending: 'Pending',
         in_transit: 'In Transit',
         arrived: 'At Warehouse',
+        ready_for_pickup: '✅✅✅ Ready for Pickup',
+        received: 'Received',
         delivered: 'Delivered',
         lost: 'Lost'
     },

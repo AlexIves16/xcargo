@@ -141,13 +141,13 @@ export default {
     contacts_page: {
         title: 'БАЙЛАНЫС',
         subtitle: 'Өзіңізге ыңғайлы кез келген әдіспен хабарласыңыз',
-        address_title: 'Біздің мекенжай',
-        address: 'Алматы қ., Алтынсарин к-сі, 26',
+        address_title: 'Біздің мекенжайлар',
+        address: '1. Алматы қ., Алтынсарин к-сі, 26\n2. Тимирязева 53\n3. Шугыла сити 340/4\n4. Шугыла сити 340/33 к4\n5. Жетысу 1, 46а\n6. Солтүстік сақина тас жолы 29/5а\n7. Зердели 1/153',
         phone_title: 'Телефондар',
         phone_sub: '(Whatsapp / Telegram)',
         schedule_title: 'Жұмыс кестесі',
-        schedule_days: 'Дс-Сб: 09:00 - 18:00',
-        schedule_off: 'Жексенбі - Демалыс',
+        schedule_days: 'Ср-Жс: 10:00 - 20:00',
+        schedule_off: 'Дүйсенбі, Сейсенбі - Демалыс',
         whatsapp_btn: 'WhatsApp-қа жазу',
         instagram_btn: 'Instagram'
     },
@@ -171,6 +171,8 @@ export default {
         pending: 'Күтуде',
         in_transit: 'Жолда',
         arrived: 'Қоймада',
+        ready_for_pickup: '✅✅✅ Алуға дайын',
+        received: 'Алынды',
         delivered: 'Жеткізілді',
         lost: 'Жоғалды'
     },

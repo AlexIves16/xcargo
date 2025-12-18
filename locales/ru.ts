@@ -141,13 +141,13 @@ export default {
     contacts_page: {
         title: 'КОНТАКТЫ',
         subtitle: 'Свяжитесь с нами любым удобным способом',
-        address_title: 'Наш Адрес',
-        address: 'г. Алматы, ул. Алтынсарина, 26',
+        address_title: 'Наши Адреса',
+        address: '1. г. Алматы, ул. Алтынсарина, 26\n2. Тимирязева 53\n3. Шугыла сити 340/4\n4. Шугыла сити 340/33 к4\n5. Жетысу 1, 46а\n6. Северное кольцо шоссе 29/5а\n7. Зердели 1/153',
         phone_title: 'Телефоны',
         phone_sub: '(Whatsapp / Telegram)',
         schedule_title: 'График работы',
-        schedule_days: 'Пн-Сб: 09:00 - 18:00',
-        schedule_off: 'Воскресенье - Выходной',
+        schedule_days: 'Ср-Вс: 10:00 - 20:00',
+        schedule_off: 'Понедельник, Вторник - Выходной',
         whatsapp_btn: 'Написать в WhatsApp',
         instagram_btn: 'Instagram'
     },
@@ -171,6 +171,8 @@ export default {
         pending: 'Ожидает',
         in_transit: 'В пути',
         arrived: 'На складе',
+        ready_for_pickup: '✅✅✅ Готов к выдаче',
+        received: 'Получено',
         delivered: 'Доставлено',
         lost: 'Утерян'
     },

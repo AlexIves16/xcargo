@@ -5,7 +5,7 @@ import { getMessaging } from 'firebase-admin/messaging';
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig();
-    
+
     // Initialize Firebase Admin
     let app;
     const apps = getApps();
@@ -77,6 +77,8 @@ export default defineEventHandler(async (event) => {
                     'pending': `Ваш трек ${trackNumber} ожидает отправки`,
                     'in_transit': `Ваш трек ${trackNumber} в пути!`,
                     'arrived': `Ура! Трек ${trackNumber} прибыл на склад`,
+                    'ready_for_pickup': `✅✅✅ Трек ${trackNumber} готов к выдаче!`,
+                    'received': `Трек ${trackNumber} получен`,
                     'delivered': `Трек ${trackNumber} выдан клиенту`,
                     'lost': `Внимание! Статус трека ${trackNumber}: Утерян`
                 };

@@ -69,11 +69,18 @@
           <span class="stat-label">В пути</span>
         </div>
       </div>
+      <div class="stat-card gold">
+        <div class="stat-icon">🏪</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ readyCount }}</span>
+          <span class="stat-label">Готов к выдаче</span>
+        </div>
+      </div>
       <div class="stat-card green">
         <div class="stat-icon">✅</div>
         <div class="stat-info">
-          <span class="stat-value">{{ deliveredCount }}</span>
-          <span class="stat-label">Доставлено</span>
+          <span class="stat-value">{{ receivedCount }}</span>
+          <span class="stat-label">Получено</span>
         </div>
       </div>
     </div>
@@ -221,15 +228,22 @@ const newTrackDescription = ref('')
 const tracks = ref([])
 const activeTracks = computed(() => tracks.value.filter(t => !t.isDeleted))
 
-const isDelivered = (track) => {
+const isReceived = (track) => {
     const s = (track.lastSecondaryStatus || '') + ' ' + (track.lastChinaStatus || '')
     const lower = s.toLowerCase()
-    return lower.includes('дата получ') || lower.includes('date of receipt') || lower.includes('выдан') || lower.includes('delivered') || lower.includes('доставлен')
+    return lower.includes('дата получ') || lower.includes('date of receipt') || lower.includes('получен') || lower.includes('received') || lower.includes('алынды') || lower.includes('已领取')
+}
+
+const isReadyForPickup = (track) => {
+    const s = (track.lastSecondaryStatus || '') + ' ' + (track.lastChinaStatus || '')
+    const lower = s.toLowerCase()
+    return lower.includes('готов к выдаче') || lower.includes('ready for pickup') || lower.includes('алуға дайын') || lower.includes('待提取') || lower.includes('✅✅✅')
 }
 
 const totalCount = computed(() => activeTracks.value.length)
-const deliveredCount = computed(() => tracks.value.filter(t => isDelivered(t)).length)
-const transitCount = computed(() => activeTracks.value.filter(t => !isDelivered(t)).length)
+const receivedCount = computed(() => tracks.value.filter(t => isReceived(t)).length)
+const readyCount = computed(() => activeTracks.value.filter(t => isReadyForPickup(t)).length)
+const transitCount = computed(() => activeTracks.value.filter(t => !isReceived(t) && !isReadyForPickup(t)).length)
 
 const loading = ref(false)
 const loadingData = ref(true)
@@ -283,7 +297,7 @@ const fetchData = () => {
                  stats: {
                      total: totalCount.value,
                      transit: transitCount.value,
-                     delivered: deliveredCount.value,
+                     received: receivedCount.value,
                      updatedAt: serverTimestamp()
                  }
              })
@@ -492,6 +506,8 @@ const getStatusLabel = (status) => {
 const getStatusColor = (status) => {
     if (!status) return 'gray';
     const s = status.toLowerCase();
+    if (s.includes('получен') || s.includes('received') || s.includes('алынды') || s.includes('已领取')) return 'purple';
+    if (s.includes('готов к выдаче') || s.includes('ready for pickup') || s.includes('алуға дайын') || s.includes('待提取') || s.includes('✅✅✅')) return 'gold';
     if (s.includes('прибыл') || s.includes('arrived') || s.includes('склад')) return 'green';
     if (s.includes('пути') || s.includes('transit') || s.includes('отправлен')) return 'blue';
     if (s.includes('выдан') || s.includes('delivered')) return 'purple';
@@ -633,6 +649,11 @@ const getStatusColor = (status) => {
 .stat-card.green {
   background: rgba(16, 185, 129, 0.1);
   border-color: rgba(16, 185, 129, 0.2);
+}
+
+.stat-card.gold {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.2);
 }
 
 .stat-icon {
@@ -892,6 +913,7 @@ const getStatusColor = (status) => {
 .status-badge.green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
 .status-badge.blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 .status-badge.purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+.status-badge.gold { background: rgba(234, 179, 8, 0.2); color: #facc15; }
 
 .status-group {
     display: flex;
