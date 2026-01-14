@@ -13,81 +13,55 @@ export default defineEventHandler(async (event) => {
 
         // Status values to clean up (delivered parcels)
         const statusesToDelete = ['delivered', 'ready_for_pickup'];
-        
+
         let totalDeleted = 0;
 
         for (const status of statusesToDelete) {
-            // Query for old delivered parcels
-            const query = db.collection('tracks')
-                .where('status', '==', status)
-                .where('updatedAt', '<', oneWeekAgo);
-            
+            // Query only by status (no composite index needed)
+            const query = db.collection('tracks').where('status', '==', status);
             const snapshot = await query.get();
-            
-            if (!snapshot.empty) {
-                const batch = db.batch();
-                let batchCount = 0;
-                
-                for (const doc of snapshot.docs) {
-                    batch.delete(doc.ref);
-                    batchCount++;
-                    
-                    // Firestore batches have a limit of 500 operations
-                    if (batchCount >= 500) {
-                        await batch.commit();
-                        totalDeleted += batchCount;
-                        batchCount = 0;
-                    }
-                }
-                
-                // Commit remaining docs in batch
-                if (batchCount > 0) {
-                    await batch.commit();
-                    totalDeleted += batchCount;
-                }
-            }
-        }
 
-        // Also check by createdAt if updatedAt is missing
-        for (const status of statusesToDelete) {
-            const queryByCreated = db.collection('tracks')
-                .where('status', '==', status)
-                .where('createdAt', '<', oneWeekAgo);
-            
-            const snapshotCreated = await queryByCreated.get();
-            
-            if (!snapshotCreated.empty) {
+            if (snapshot.empty) continue;
+
+            // Filter by date on server side
+            const docsToDelete = snapshot.docs.filter(doc => {
+                const data = doc.data();
+
+                // Check updatedAt first, then createdAt
+                let docDate = null;
+                if (data.updatedAt) {
+                    docDate = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
+                } else if (data.createdAt) {
+                    docDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                }
+
+                // If no date found, skip (don't delete)
+                if (!docDate) return false;
+
+                // Return true if older than one week
+                return docDate < oneWeekAgo;
+            });
+
+            console.log(`[Admin] Found ${docsToDelete.length} old parcels with status "${status}"`);
+
+            // Delete in batches of 500
+            for (let i = 0; i < docsToDelete.length; i += 500) {
                 const batch = db.batch();
-                let batchCount = 0;
-                
-                for (const doc of snapshotCreated.docs) {
-                    // Skip if already deleted (had updatedAt)
-                    const data = doc.data();
-                    if (data.updatedAt && data.updatedAt.toDate() >= oneWeekAgo) {
-                        continue;
-                    }
-                    
+                const batchDocs = docsToDelete.slice(i, i + 500);
+
+                for (const doc of batchDocs) {
                     batch.delete(doc.ref);
-                    batchCount++;
-                    
-                    if (batchCount >= 500) {
-                        await batch.commit();
-                        totalDeleted += batchCount;
-                        batchCount = 0;
-                    }
                 }
-                
-                if (batchCount > 0) {
-                    await batch.commit();
-                    totalDeleted += batchCount;
-                }
+
+                await batch.commit();
+                totalDeleted += batchDocs.length;
             }
         }
 
         console.log(`[Admin] Deleted ${totalDeleted} old delivered parcels.`);
 
-        return { 
-            success: true, 
+        return {
+            success: true,
             deleted: totalDeleted,
             message: `Удалено ${totalDeleted} посылок со статусом "Доставлено" старше недели.`
         };

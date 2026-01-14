@@ -1,7 +1,7 @@
 
 /// <reference path="app.config.d.ts" />
 /// <reference path="runtime-config.d.ts" />
-/// <reference types="C:/Users/ormix/Desktop/CodeProjects/Xcargo/NI/node_modules/@nuxt/nitro-server/dist/index.mjs" />
+/// <reference types="D:/CodeProjects/xcargo26/xcargo/node_modules/@nuxt/nitro-server/dist/index.mjs" />
 /// <reference path="middleware.d.ts" />
 /// <reference path="./schema.d.ts" />
 

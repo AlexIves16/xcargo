@@ -6,6 +6,9 @@ declare module "nitropack/types" {
     '/api/admin/clear-db': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/clear-db.post').default>>>>
     }
+    '/api/admin/clear-old-delivered': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/clear-old-delivered.post').default>>>>
+    }
     '/api/admin/stats': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/stats.get').default>>>>
     }
