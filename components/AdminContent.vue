@@ -62,6 +62,15 @@
             <span v-else>🔄 {{ t('admin.sync_btn') }}</span>
           </button>
           
+          <button 
+            @click="clearOldDelivered"
+            class="action-btn red"
+            :disabled="clearingOld"
+          >
+            <span v-if="clearingOld">{{ t('admin.clearing_old') }}</span>
+            <span v-else>🧹 {{ t('admin.clear_old_btn') }}</span>
+          </button>
+          
           <!-- 
           <button 
             @click="clearDatabase"
@@ -293,6 +302,7 @@ const isAdmin = ref(false);
 const uploading = ref(false);
 const syncing = ref(false);
 const clearing = ref(false);
+const clearingOld = ref(false);
 const archiving = ref(false);
 const chinaInput = ref(null);
 const receivedInput = ref(null);
@@ -547,6 +557,29 @@ const clearDatabase = async () => {
         alert('Ошибка соединения или сервера');
     } finally {
         clearing.value = false;
+    }
+};
+
+const clearOldDelivered = async () => {
+    if (!confirm(t('admin.confirm_clear_old'))) return;
+
+    clearingOld.value = true;
+    try {
+        const res = await $fetch('/api/admin/clear-old-delivered', {
+            method: 'POST',
+        });
+        
+        if (res.success) {
+            alert(t('admin.clear_old_success').replace('{n}', res.deleted));
+            fetchStats(); // Update stats
+        } else {
+            alert(t('admin.clear_old_error') + ': ' + res.error);
+        }
+    } catch (e) {
+        console.error('[ClearOldDelivered] Exception:', e);
+        alert(t('admin.clear_old_error'));
+    } finally {
+        clearingOld.value = false;
     }
 };
 

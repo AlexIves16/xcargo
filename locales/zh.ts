@@ -239,7 +239,14 @@ export default {
         confirm_bulk: '确定将 {n} 个包裹的状态更改为 "{status}"？',
         confirm_delete: '确定吗？此操作无法撤消。',
         upload_complete: '上传完成！\n更新：{updated}\n创建：{created}\n错误：{errors}',
-        error_upload: '文件处理错误。'
+        error_upload: '文件处理错误。',
+        clear_old_btn: '清除旧的已送达',
+        clearing_old: '清除中...',
+        confirm_clear_old: '删除一周前所有"已送达"状态的记录？',
+        clear_old_success: '已删除 {n} 条旧记录',
+        clear_old_error: '清除时出错',
+        bulk_delete: '删除',
+        confirm_bulk_delete: '删除 {n} 个选定的包裹？'
     },
     footer: {
         rights: '保留所有权利。',

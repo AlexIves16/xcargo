@@ -270,7 +270,14 @@ export default {
             actions: 'Actions',
             user: 'User'
         },
-        delete: 'Delete'
+        delete: 'Delete',
+        clear_old_btn: 'Clear Old Delivered',
+        clearing_old: 'Clearing...',
+        confirm_clear_old: 'Delete all records with "Delivered" status older than a week?',
+        clear_old_success: 'Deleted {n} old records',
+        clear_old_error: 'Error while clearing',
+        bulk_delete: 'Delete',
+        confirm_bulk_delete: 'Delete {n} selected parcels?'
     },
     auth: {
         email_title: 'Sign in with Email',

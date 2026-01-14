@@ -239,7 +239,14 @@ export default {
         confirm_bulk: '{n} сәлемдеме үшін статусты "{status}" деп өзгерту керек пе?',
         confirm_delete: 'Сенімдісіз бе? Бұл әрекетті қайтару мүмкін емес.',
         upload_complete: 'Жүктеу аяқталды!\nЖаңартылды: {updated}\nҚұрылды: {created}\nҚателер: {errors}',
-        error_upload: 'Файлды өңдеу қатесі.'
+        error_upload: 'Файлды өңдеу қатесі.',
+        clear_old_btn: 'Ескі жіберілгендерді тазалау',
+        clearing_old: 'Тазалануда...',
+        confirm_clear_old: 'Бір аптадан асқан "Жіберілді" мәртебесіндегі барлық жазбаларды жою керек пе?',
+        clear_old_success: '{n} ескі жазба жойылды',
+        clear_old_error: 'Тазалау кезіндегі қате',
+        bulk_delete: 'Жою',
+        confirm_bulk_delete: '{n} таңдалған сәлемдемені жою керек пе?'
     },
     footer: {
         rights: 'Барлық құқықтар қорғалған.',

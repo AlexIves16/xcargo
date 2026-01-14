@@ -253,7 +253,14 @@ export default {
             user: 'Польз.',
             actions: 'Действия'
         },
-        delete: 'Удалить'
+        delete: 'Удалить',
+        clear_old_btn: 'Очистить старые доставленные',
+        clearing_old: 'Очистка...',
+        confirm_clear_old: 'Удалить все записи со статусом "Доставлено" старше недели?',
+        clear_old_success: 'Удалено {n} старых записей',
+        clear_old_error: 'Ошибка при очистке',
+        bulk_delete: 'Удалить',
+        confirm_bulk_delete: 'Удалить {n} выбранных посылок?'
     },
     login: {
         title: 'Вход в систему',
