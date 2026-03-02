@@ -16,3 +16,25 @@
         /* Significantly smaller interface */
     }
 }
+
+/* Hide scrollbar while keeping scroll functionality */
+/* Works on Chrome, Edge, and Safari */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+html {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* For containers that specifically need hidden scrollbars */
+.scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+}
