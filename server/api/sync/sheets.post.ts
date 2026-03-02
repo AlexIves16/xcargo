@@ -5,12 +5,12 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { google } from 'googleapis';
 
 export default defineEventHandler(async (event) => {
-    console.log('[Sync] Sync endpoint triggered, initializing...');
+    console.log('[Sync] Точка входа синхронизации активирована, инициализация...');
     const config = useRuntimeConfig();
     const SPREADSHEET_ID = config.spreadsheetId;
     if (!SPREADSHEET_ID) {
-        console.error('[Sync] SPREADSHEET_ID is not defined in runtime config');
-        throw new Error('SPREADSHEET_ID is not defined in runtime config');
+        console.error('[Sync] SPREADSHEET_ID не определен в конфигурации среды выполнения');
+        throw new Error('SPREADSHEET_ID не определен в конфигурации среды выполнения');
     }
 
     // Проверяем, запущена ли уже синхронизация
@@ -18,40 +18,40 @@ export default defineEventHandler(async (event) => {
     const syncLockRef = db.collection('system').doc('sync-lock');
     let lockDoc = await syncLockRef.get();
     
-    console.log('[Sync] Checking for existing sync locks...');
+    console.log('[Sync] Проверяем наличие существующих блокировок синхронизации...');
     if (lockDoc.exists && lockDoc.data()?.active) {
         const lockData = lockDoc.data();
         const lockTime = lockData.timestamp?.toDate();
         const now = new Date();
         const diffMinutes = (now.getTime() - lockTime.getTime()) / (1000 * 60);
         
-        console.log('[Sync] Existing lock found, checking age:', {
+        console.log('[Sync] Найдена существующая блокировка, проверяем возраст:', {
             lockAgeMinutes: diffMinutes,
-            threshold: 30,
-            initiatedBy: lockData.initiatedBy,
-            userAgent: lockData.userAgent
+            threshold: 10,
+            initiatedBy: lockData?.initiatedBy,
+            userAgent: lockData?.userAgent
         });
         
-        // Если блокировка старше 30 минут, считаем её застывшей
-        if (diffMinutes < 30) {
-            console.log('[Sync] Sync is already running, skipping duplicate request');
+        // Если блокировка старше 10 минут, считаем её застывшей
+        if (diffMinutes < 10) {
+            console.log('[Sync] Синхронизация уже запущена, пропускаем дублирующий запрос');
             return { 
                 success: false, 
-                error: 'Sync is already running, please wait for it to complete', 
+                error: 'Синхронизация уже запущена, дождитесь её завершения', 
                 currentlyRunning: true,
                 lockAgeMinutes: Math.round(diffMinutes),
-                initiatedBy: lockData.initiatedBy
+                initiatedBy: lockData?.initiatedBy
             };
         } else {
-            console.log('[Sync] Clearing stale sync lock (age: ' + Math.round(diffMinutes) + ' minutes)');
+            console.log('[Sync] Очистка устаревшей блокировки синхронизации (возраст: ' + Math.round(diffMinutes) + ' минут)');
             await syncLockRef.update({
                 active: false,
                 timestamp: Timestamp.now(),
                 clearedStale: true,
                 previousLockInfo: {
-                    initiatedBy: lockData.initiatedBy,
-                    userAgent: lockData.userAgent,
-                    originalTimestamp: lockData.timestamp
+                    initiatedBy: lockData?.initiatedBy,
+                    userAgent: lockData?.userAgent,
+                    originalTimestamp: lockData?.timestamp
                 }
             });
             // Refresh the lock document after update
@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Устанавливаем блокировку
-    console.log('[Sync] Setting sync lock...');
+    console.log('[Sync] Устанавливаем блокировку синхронизации...');
     await syncLockRef.set({
         active: true,
         timestamp: Timestamp.now(),
@@ -69,24 +69,24 @@ export default defineEventHandler(async (event) => {
     });
 
     // Запускаем синхронизацию в фоне
-    console.log('[Sync] Starting background sync process...');
+    console.log('[Sync] Запуск фонового процесса синхронизации...');
     processSyncInBackground(SPREADSHEET_ID, config);
 
-    console.log('[Sync] Sync initiated successfully, returning response to client');
+    console.log('[Sync] Синхронизация успешно запущена, возвращаем ответ клиенту');
     return { 
         success: true, 
-        message: 'Sync started in background', 
-        estimatedTime: '15-30 minutes for large datasets',
-        direction: 'one-way: Google Sheets -> Firestore DB',
+        message: 'Синхронизация запущена в фоне', 
+        estimatedTime: '15-30 минут для больших наборов данных',
+        direction: 'односторонняя: Google Таблицы -> База данных Firestore',
         startedAt: new Date().toISOString()
     };
 });
 
 async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
-    console.log('[Sync] Background sync process initialized');
+    console.log('[Sync] Инициализация фонового процесса синхронизации');
     try {
         const startTime = Date.now();
-        console.log('[Sync] Background sync started at:', new Date(startTime).toISOString());
+        console.log('[Sync] Фоновая синхронизация начата в:', new Date(startTime).toISOString());
 
         // 1. Initialize Firebase Admin
         let app;
@@ -105,7 +105,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         }
 
         if (apps.length === 0) {
-            console.log('[Sync] Initializing new Firebase app...');
+            console.log('[Sync] Инициализация нового приложения Firebase...');
             app = initializeApp({
                 credential: cert({
                     projectId: config.firebaseProjectId || config.public.firebaseProjectId as string,
@@ -114,7 +114,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 }),
             });
         } else {
-            console.log('[Sync] Using existing Firebase app...');
+            console.log('[Sync] Использование существующего приложения Firebase...');
             app = getApp();
         }
 
@@ -122,7 +122,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         const messaging = getMessaging(app);
 
         // 2. Initialize Google Sheets Auth
-        console.log('[Sync] Initializing Google Sheets authentication...');
+        console.log('[Sync] Инициализация аутентификации Google Таблиц...');
         const authClient = new google.auth.JWT({
             email: clientEmail,
             key: privateKey,
@@ -130,12 +130,12 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         });
 
         await authClient.authorize();
-        console.log('[Sync] Google Sheets authentication successful');
+        console.log('[Sync] Аутентификация Google Таблиц прошла успешно');
 
         const sheets = google.sheets({ version: 'v4', auth: authClient as any });
 
         // --- GET SHEET NAME ---
-        console.log('[Sync] Getting spreadsheet metadata...');
+        console.log('[Sync] Получение метаданных электронной таблицы...');
         const meta = await sheets.spreadsheets.get({
             spreadsheetId: SPREADSHEET_ID,
             auth: authClient as any
@@ -147,16 +147,16 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         }
 
         const rangeName = `${firstSheetTitle}!A:E`;
-        console.log('[Sync] Using sheet:', firstSheetTitle);
-        console.log('[Sync] Range to read:', rangeName);
+        console.log('[Sync] Использование листа:', firstSheetTitle);
+        console.log('[Sync] Диапазон для чтения:', rangeName);
 
         // --- LOAD ALL SHEET ROWS ONCE FOR EFFICIENT LOOKUPS ---
-        console.log('[Sync] Loading all sheet rows for efficient lookups...');
+        console.log('[Sync] Загрузка всех строк таблицы для эффективного поиска...');
         const sheetRows = await getAllSheetRows(sheets, SPREADSHEET_ID, firstSheetTitle, authClient as any);
-        console.log(`[Sync] Loaded ${sheetRows.size} tracks from sheet for lookup`);
+        console.log(`[Sync] Загружено ${sheetRows.size} треков из таблицы для поиска`);
 
         // --- PROCESS FIRESTORE TRACKS INCREMENTALLY ---
-        console.log('[Sync] Processing Firestore tracks incrementally...');
+        console.log('[Sync] Обработка треков в Firestore инкрементально...');
         
         const BATCH_SIZE = 250; // Increased batch size for better performance
         let lastDoc = null;
@@ -167,6 +167,11 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         let batchNumber = 0;
         let lastProgressLog = Date.now();
         const logInterval = 30000; // Log progress every 30 seconds
+        
+        // Ensure stats is properly initialized
+        if (!stats) {
+            stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
+        }
         
         do {
             batchNumber++;
@@ -243,7 +248,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             }
 
             // Execute Firestore batch if we have updates
-            if (notificationsQueue.length > 0 || stats.updatedInDb > 0) {  // Check if batch has operations
+            if (notificationsQueue.length > 0 || (stats && stats.updatedInDb > 0)) {  // Check if batch has operations
                 await batch.commit();
             }
 
@@ -294,7 +299,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             // Log progress periodically instead of every batch
             const now = Date.now();
             if (now - lastProgressLog > logInterval) {
-                console.log(`[Sync] Progress: Processed ${totalProcessed} tracks, Stats:`, stats);
+                console.log(`[Sync] Прогресс: Обработано ${totalProcessed} треков, Статистика:`, stats);
                 lastProgressLog = now;
             }
 
@@ -305,12 +310,16 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         } while (lastDoc);
 
         // Process sheet-only entries (add missing tracks from sheet to DB)
-        console.log('[Sync] Processing sheet-only entries (adding missing tracks from sheet to DB)...');
+        console.log('[Sync] Обработка записей только в таблице (добавление недостающих треков из таблицы в БД)...');
+        // Ensure stats is properly initialized before passing to function
+        if (!stats) {
+            stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
+        }
         await processSheetOnlyEntries(sheets, SPREADSHEET_ID, firstSheetTitle, db, authClient as any, stats, sheetRows);
         
         // IMPORTANT: We do NOT add records from DB to Sheet (one-way sync: Sheet -> DB only)
         // All changes originate from Google Sheets and are pushed to Firestore DB
-        console.log('[Sync] One-way sync completed: Google Sheets -> Firestore DB only');
+        console.log('[Sync] Односторонняя синхронизация завершена: Google Таблицы -> База данных Firestore только');
 
         const endTime = Date.now();
         const duration = ((endTime - startTime) / 1000).toFixed(2);
@@ -325,16 +334,16 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             completedSuccessfully: true
         });
 
-        console.log(`[Sync] Background sync completed in ${duration}s. Final stats:`, stats);
-        console.log('[Sync] Sync process finished successfully after ' + duration + ' seconds');
-        console.log('[Sync] One-way sync complete: Google Sheets -> Firestore DB only');
+        console.log(`[Sync] Фоновая синхронизация завершена за ${duration}с. Итоговая статистика:`, stats);
+        console.log('[Sync] Процесс синхронизации успешно завершен после ' + duration + ' секунд');
+        console.log('[Sync] Односторонняя синхронизация завершена: Google Таблицы -> База данных Firestore только');
 
         // Return stats for admin panel
         return stats;
 
     } catch (error: any) {
-        console.error('[Sync] Background sync failed:', error);
-        console.error('[Sync] Error details:', {
+        console.error('[Sync] Фоновая синхронизация не удалась:', error);
+        console.error('[Sync] Детали ошибки:', {
             message: error.message,
             stack: error.stack,
             name: error.name
@@ -352,7 +361,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 errorMessage: error.message.substring(0, 500) // Truncate long error messages
             });
         } catch (cleanupError) {
-            console.error('[Sync] Error cleaning up sync lock:', cleanupError);
+            console.error('[Sync] Ошибка при очистке блокировки синхронизации:', cleanupError);
         }
         
         // Re-throw error so it can be caught by the main handler
@@ -405,12 +414,19 @@ async function getAllSheetRows(sheets: any, spreadsheetId: string, sheetTitle: s
 // Helper function to process entries that exist only in sheet
 async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheetTitle: string, db: any, authClient: any, stats: any, sheetRows: Map<any, any>) {
     try {
-        console.log(`[Sync] Processing ${sheetRows.size} sheet entries to find ones missing in Firestore`);
+        // Ensure stats object exists and has required properties
+        if (!stats) {
+            stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
+        }
+        if (typeof stats.addedToDb === 'undefined') stats.addedToDb = 0;
+        if (typeof stats.updatedInDb === 'undefined') stats.updatedInDb = 0;
+        if (typeof stats.notificationsSent === 'undefined') stats.notificationsSent = 0;
+        console.log(`[Sync] Обработка ${sheetRows.size} записей в таблице для поиска отсутствующих в Firestore`);
         
         // Get current count of tracks in Firestore for comparison
         const firestoreCountSnapshot = await db.collection('tracks').count().get();
         const firestoreCount = firestoreCountSnapshot.data().count;
-        console.log(`[Sync] Current Firestore track count: ${firestoreCount}`);
+        console.log(`[Sync] Текущее количество треков в Firestore: ${firestoreCount}`);
         
         // Process each sheet row to see if it exists in Firestore
         let processed = 0;
@@ -421,13 +437,13 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
         for (const [trackNum, sheetRow] of sheetRows.entries()) {
             processed++;
             if (!trackNum) {
-                console.log(`[Sync] Skipping empty track number in sheet`);
+                console.log(`[Sync] Пропускаем пустой номер трека в таблице`);
                 continue;
             }
 
             // Validate track number format
             if (!isValidTrackNumber(trackNum)) {
-                console.log(`[Sync] ❌ INVALID TRACK NUMBER in sheet: "${trackNum}" at row ${sheetRow.rowIndex}`);
+                console.log(`[Sync] ❌ НЕДЕЙСТВИТЕЛЬНЫЙ НОМЕР ТРЕКА в таблице: "${trackNum}" в строке ${sheetRow.rowIndex}`);
                 invalidTrackNumbers.push({
                     trackNumber: trackNum,
                     rowIndex: sheetRow.rowIndex,
@@ -438,7 +454,7 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
             }
 
             if (processed % 500 === 0) {
-                console.log(`[Sync] Progress: Processed ${processed}/${sheetRows.size} sheet entries...`);
+                console.log(`[Sync] Прогресс: Обработано ${processed}/${sheetRows.size} записей в таблице...`);
             }
             
             // Check if this track exists in Firestore
@@ -494,7 +510,7 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
             }
         }
         
-        console.log('[Sync] Completed processing sheet-only entries. Summary:', {
+        console.log('[Sync] Завершена обработка записей только в таблице. Результат:', {
             totalProcessed: processed,
             addedToDb: addedToDbCount,
             alreadyExists: alreadyExistsCount,
