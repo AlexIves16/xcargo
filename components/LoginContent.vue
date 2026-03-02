@@ -54,7 +54,7 @@
 
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { GoogleAuthProvider, signInWithPopup, signInWithCustomToken } from 'firebase/auth'
+import { GoogleAuthProvider, signInWithPopup, signInWithCustomToken, getAuth } from 'firebase/auth'
 import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps({
@@ -74,8 +74,7 @@ let pollInterval = null
 const { t } = useI18n()
 
 // Use Nuxt App for Auth
-const { $auth } = useNuxtApp()
-const router = useRouter()
+const nuxtApp = useNuxtApp()
 
 // Animation Trigger
 watch(() => props.triggerAnim, (val) => {
@@ -84,7 +83,7 @@ watch(() => props.triggerAnim, (val) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (props.triggerAnim) {
     setTimeout(() => { showContent.value = true }, 100)
   }
@@ -102,23 +101,38 @@ const signInWithGoogle = async () => {
   error.value = ''
   
   try {
+    // Получаем auth из плагина
+    const auth = nuxtApp.$auth
+    if (!auth) {
+      // Проверяем, есть ли конфигурация Firebase
+      const config = useRuntimeConfig()
+      if (!config.public.firebaseApiKey) {
+        throw new Error('Firebase API Key is not configured. Please contact administrator.')
+      } else {
+        throw new Error('Firebase Auth is not initialized. Please refresh the page.')
+      }
+    }
+    
     const provider = new GoogleAuthProvider()
-    const result = await signInWithPopup($auth, provider)
-    
-    // Check if admin
-    const user = result.user
-    const ADMIN_EMAIL = 'kairfakomylife@gmail.com'
-    
-    // In this SPA context, we might redirect or emit success.
-    // For now, mirroring user's router logic
-    if (user.email === ADMIN_EMAIL) {
-      router.push('/admin')
-    } else {
-      router.push('/dashboard')
+    // Проверяем, что authDomain настроен корректно для локальной разработки
+    if (typeof window !== 'undefined') {
+      const result = await signInWithPopup(auth, provider)
+      
+      // Check if admin
+      const user = result.user
+      const ADMIN_EMAIL = 'kairfakomylife@gmail.com'
+      
+      // In this SPA context, we might redirect or emit success.
+      // For now, mirroring user's router logic
+      if (user.email === ADMIN_EMAIL) {
+        useRouter().push('/admin')
+      } else {
+        useRouter().push('/dashboard')
+      }
     }
   } catch (e) {
     console.error('Login error:', e)
-    if (e.code === 'auth/popup-closed-by-user') {
+    if (e?.code === 'auth/popup-closed-by-user') {
       error.value = t('auth_pages.login.error_user_cancel')
     } else {
       error.value = t('auth_pages.login.error_generic')
@@ -153,8 +167,19 @@ const signInWithTelegramApp = async () => {
           clearInterval(pollInterval)
           telegramPolling.value = false
           
-          await signInWithCustomToken($auth, status.token)
-          router.push('/dashboard')
+          const auth = nuxtApp.$auth
+          if (!auth) {
+            // Проверяем, есть ли конфигурация Firebase
+            const config = useRuntimeConfig()
+            if (!config.public.firebaseApiKey) {
+              throw new Error('Firebase API Key is not configured. Please contact administrator.')
+            } else {
+              throw new Error('Firebase Auth is not initialized. Please refresh the page.')
+            }
+          }
+          
+          await signInWithCustomToken(auth, status.token)
+          useRouter().push('/dashboard')
         } else if (status.status === 'expired') {
           clearInterval(pollInterval)
           telegramPolling.value = false

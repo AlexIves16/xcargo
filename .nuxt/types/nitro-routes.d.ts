@@ -3,6 +3,12 @@ import type { Serialize, Simplify } from "nitropack/types";
 declare module "nitropack/types" {
   type Awaited<T> = T extends PromiseLike<infer U> ? Awaited<U> : T
   interface InternalApi {
+    '/api/admin/clean-broken-tracks': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/clean-broken-tracks.post').default>>>>
+    }
+    '/api/admin/clean-sheet-broken': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/clean-sheet-broken.post').default>>>>
+    }
     '/api/admin/clear-db': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/clear-db.post').default>>>>
     }
@@ -33,11 +39,23 @@ declare module "nitropack/types" {
     '/api/debug/webhook-status': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/debug/webhook-status.get').default>>>>
     }
+    '/api/google-sheets-test': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/google-sheets-test.get').default>>>>
+    }
+    '/api/health': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/health.get').default>>>>
+    }
     '/api/sync/sheets': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/sync/sheets.post').default>>>>
     }
+    '/api/sync/status': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/sync/status.get').default>>>>
+    }
     '/api/telegram-webhook': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/telegram-webhook.post').default>>>>
+    }
+    '/api/test/google-sheets': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/test/google-sheets.get').default>>>>
     }
     '/api/track': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/track.post').default>>>>

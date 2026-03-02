@@ -18,9 +18,11 @@
         <div class="input-wrapper">
           <input 
             v-model="trackingNumber" 
+            @input="validateTrackingNumber"
             :placeholder="t('search.placeholder')" 
             class="glow-input"
             @keyup.enter="searchByTrackingNumber"
+            maxlength="50"
           />
           <button @click="searchByTrackingNumber" class="btn search-btn" :disabled="loading">
             {{ loading ? t('search.loading') : t('search.button') }}
@@ -179,6 +181,11 @@ async function searchByTrackingNumber() {
   } finally {
     loading.value = false
   }
+}
+
+function validateTrackingNumber() {
+  // Allow only letters, numbers, hyphens, and spaces
+  trackingNumber.value = trackingNumber.value.replace(/[^a-zA-Z0-9\s-]/g, '');
 }
 
 const getStatusClass = (status) => {

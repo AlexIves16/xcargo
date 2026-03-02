@@ -3,7 +3,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-export default defineNuxtPlugin((nuxtApp) => {
+export default defineNuxtPlugin((nuxtApp: any) => {
   const config = useRuntimeConfig();
 
   const firebaseConfig = {
@@ -18,6 +18,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   console.log('🔥 Firebase Config Loaded:', {
     apiKey: firebaseConfig.apiKey ? 'Present' : 'MISSING',
+    authDomain: firebaseConfig.authDomain ? 'Present' : 'MISSING',
     senderId: firebaseConfig.messagingSenderId ? 'Present' : 'MISSING',
     projectId: firebaseConfig.projectId ? 'Present' : 'MISSING'
   });

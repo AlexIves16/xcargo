@@ -1,12 +1,25 @@
 import { getFirebaseAdmin } from '@/server/utils/firebase'
 import { defineEventHandler, readBody, createError } from 'h3'
 
+// Validate track number format (letters, numbers, spaces, hyphens only)
+function isValidTrackNumber(trackNum: string): boolean {
+    if (!trackNum || trackNum.trim().length === 0) return false;
+    // Allow only letters, numbers, spaces, and hyphens
+    const validPattern = /^[a-zA-Z0-9\s-]+$/;
+    return validPattern.test(trackNum.trim());
+}
+
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const { trackingNumber, token } = body
 
     if (!trackingNumber) {
         throw createError({ statusCode: 400, message: 'Missing tracking number' })
+    }
+
+    // Validate track number format
+    if (!isValidTrackNumber(trackingNumber)) {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid track number format. Only letters, numbers, spaces, and hyphens are allowed.' });
     }
 
     if (!token) {

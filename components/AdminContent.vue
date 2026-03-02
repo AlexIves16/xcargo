@@ -10,13 +10,20 @@
           <!-- Stats Indicators -->
           <div v-if="stats" class="stats-indicators">
               <div class="stat-badge" :class="{ 'warning': stats.db > 20000 }">
+                  <span class="stat-icon">🗄️</span>
                   <span class="stat-label">DB:</span>
-                  <span class="stat-val">{{ stats.db }}</span>
+                  <span class="stat-val">{{ stats.db.toLocaleString() }}</span>
+                  <span v-if="stats.db > 20000" class="stat-warning">⚠️</span>
               </div>
               <div class="stat-badge" :class="{ 'warning': stats.sheet > 20000 }">
+                  <span class="stat-icon">📊</span>
                   <span class="stat-label">Sheet:</span>
-                  <span class="stat-val">{{ stats.sheet }}</span>
+                  <span class="stat-val">{{ stats.sheet.toLocaleString() }}</span>
+                  <span v-if="stats.sheet > 20000" class="stat-warning">⚠️</span>
               </div>
+              <button @click="fetchStats" class="refresh-btn" title="Обновить статистику">
+                  <span class="refresh-icon">🔄</span>
+              </button>
           </div>
 
           <button @click="$emit('navigate', 'dashboard')" class="text-btn">
@@ -70,6 +77,26 @@
             <span v-if="clearingOld">{{ t('admin.clearing_old') }}</span>
             <span v-else>🧹 {{ t('admin.clear_old_btn') }}</span>
           </button>
+          
+          <!-- Hidden cleanup buttons - no longer needed after validation implementation
+          <button 
+            @click="cleanBrokenTracks"
+            class="action-btn orange"
+            :disabled="cleaningBroken"
+          >
+            <span v-if="cleaningBroken">{{ t('admin.cleaning_broken') }}</span>
+            <span v-else>🧹 {{ t('admin.clean_broken_btn') }}</span>
+          </button>
+          
+          <button 
+            @click="cleanSheetBroken"
+            class="action-btn purple"
+            :disabled="cleaningSheet"
+          >
+            <span v-if="cleaningSheet">{{ t('admin.cleaning_sheet') }}</span>
+            <span v-else>🗑️ {{ t('admin.clean_sheet_btn') }}</span>
+          </button>
+          -->
           
           <!-- 
           <button 
@@ -303,11 +330,14 @@ const uploading = ref(false);
 const syncing = ref(false);
 const clearing = ref(false);
 const clearingOld = ref(false);
+const cleaningBroken = ref(false);
+const cleaningSheet = ref(false);
 const archiving = ref(false);
 const chinaInput = ref(null);
 const receivedInput = ref(null);
 const unsubscribe = ref(null);
 const stats = ref(null);
+let statsInterval = null;
 
 const pageSize = ref(50);
 const pageHistory = ref([]); 
@@ -583,6 +613,53 @@ const clearOldDelivered = async () => {
     }
 };
 
+const cleanBrokenTracks = async () => {
+    if (!confirm(t('admin.confirm_clean_broken'))) return;
+
+    cleaningBroken.value = true;
+    try {
+        const res = await $fetch('/api/admin/clean-broken-tracks', {
+            method: 'POST',
+        });
+        
+        if (res.success) {
+            alert(`${t('admin.clean_broken_success')} ${res.deleted} ${t('admin.records_deleted')}`);
+            fetchStats(); // Update stats
+        } else {
+            alert(t('admin.clean_broken_error') + ': ' + res.error);
+        }
+    } catch (e) {
+        console.error('[CleanBrokenTracks] Exception:', e);
+        alert(t('admin.clean_broken_error'));
+    } finally {
+        cleaningBroken.value = false;
+    }
+};
+
+const cleanSheetBroken = async () => {
+    if (!confirm(t('admin.confirm_clean_sheet'))) return;
+
+    cleaningSheet.value = true;
+    try {
+        const res = await $fetch('/api/admin/clean-sheet-broken', {
+            method: 'POST',
+        });
+        
+        if (res.success) {
+            const message = `${t('admin.clean_sheet_success')} ${res.deletedRows} ${t('admin.sheet_rows_deleted')}\n\n${t('admin.processed_rows')}: ${res.processedRows}`;
+            alert(message);
+            fetchStats(); // Update stats
+        } else {
+            alert(t('admin.clean_sheet_error') + ': ' + res.error);
+        }
+    } catch (e) {
+        console.error('[CleanSheetBroken] Exception:', e);
+        alert(t('admin.clean_sheet_error'));
+    } finally {
+        cleaningSheet.value = false;
+    }
+};
+
 const getStatusColor = (status, type) => {
     if (!status) return 'gray';
     const s = status.toLowerCase();
@@ -611,9 +688,15 @@ const handleUpload = async (event, targetStatus) => {
     let updatedCount = 0;
     let createdCount = 0;
     
+    // Validate track number format
+    function validateTrackNumber(trackNum) {
+        // Allow only letters, numbers, spaces, and hyphens
+        return trackNum.replace(/[^a-zA-Z0-9\s-]/g, '');
+    }
+    
     for (let i = 1; i < jsonData.length; i++) {
         const row = jsonData[i];
-         const trackNum = row[0]?.toString().trim();
+         const trackNum = validateTrackNumber(row[0]?.toString().trim()); // Validate track number
          if(!trackNum) continue;
          
          const q = query(collection($db, 'tracks'), where('number', '==', trackNum));
@@ -668,7 +751,15 @@ onMounted(() => {
    if (currentUser.value) {
        checkAdminAndLoad();
        fetchStats();
+       // Start auto-refresh every 30 seconds
+       statsInterval = setInterval(fetchStats, 30000);
    }
+});
+
+onUnmounted(() => {
+    if (statsInterval) {
+        clearInterval(statsInterval);
+    }
 });
 
 const fetchStats = async () => {
@@ -767,25 +858,81 @@ onUnmounted(() => {
 
 .stat-badge {
     background: rgba(255,255,255,0.1);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 0.85rem;
+    border-radius: 12px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
     display: flex;
-    gap: 6px;
+    gap: 8px;
+    align-items: center;
     border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-badge:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateY(-2px);
 }
 
 .stat-badge.warning {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.4);
-}
-.stat-badge.warning .stat-val {
-    color: #fca5a5; /* Reddish text */
-    font-weight: bold;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
 }
 
-.stat-label { color: #94a3b8; }
-.stat-val { color: white; font-family: monospace; }
+.stat-badge.warning:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.stat-icon {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.stat-label { 
+    color: #94a3b8; 
+    font-weight: 500;
+}
+
+.stat-val { 
+    color: white; 
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 1.05rem;
+}
+
+.stat-warning {
+    color: #fbbf24;
+    font-size: 1.1rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.refresh-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: rotate(90deg);
+}
+
+.refresh-icon {
+    font-size: 1.1rem;
+}
 
 
 /* Content Grid */
@@ -841,6 +988,7 @@ onUnmounted(() => {
 .action-btn.green { background: linear-gradient(135deg, #10B981, #059669); }
 .action-btn.orange { background: linear-gradient(135deg, #F59E0B, #D97706); }
 .action-btn.red { background: linear-gradient(135deg, #EF4444, #DC2626); }
+.action-btn.purple { background: linear-gradient(135deg, #A855F7, #7E22CE); }
 .action-btn.small { padding: 8px 15px; font-size: 0.85rem; }
 
 .info-text {

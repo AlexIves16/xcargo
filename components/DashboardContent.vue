@@ -94,9 +94,11 @@
         <div class="input-group">
           <input 
             v-model="newTrackNumber" 
+            @input="validateTrackNumber"
             type="text" 
             :placeholder="t('dashboard.placeholder_track') + ' *'" 
             class="glass-input"
+            maxlength="50"
           />
           <input 
             v-model="newTrackDescription" 
@@ -437,6 +439,11 @@ const enableNotifications = async (silent = false) => {
 }
 
 
+
+const validateTrackNumber = () => {
+  // Allow only letters, numbers, hyphens, and spaces
+  newTrackNumber.value = newTrackNumber.value.replace(/[^a-zA-Z0-9\s-]/g, '');
+};
 
 const addTrackNumber = async () => {
   if (!newTrackNumber.value.trim()) return

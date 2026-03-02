@@ -2,6 +2,14 @@ import { defineEventHandler, readBody } from 'h3';
 import { getFirebaseAdmin } from '../../utils/firebase';
 import { Timestamp } from 'firebase-admin/firestore';
 
+// Validate track number format (letters, numbers, spaces, hyphens only)
+function isValidTrackNumber(trackNum: string): boolean {
+    if (!trackNum || trackNum.trim().length === 0) return false;
+    // Allow only letters, numbers, spaces, and hyphens
+    const validPattern = /^[a-zA-Z0-9\s-]+$/;
+    return validPattern.test(trackNum.trim());
+}
+
 export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { number, description, userId, userEmail, userName } = body;
@@ -10,12 +18,16 @@ export default defineEventHandler(async (event) => {
         return { success: false, error: 'Missing required fields' };
     }
 
+    // Validate track number format
+    if (!isValidTrackNumber(number)) {
+        return { success: false, error: 'Invalid track number format. Only letters, numbers, spaces, and hyphens are allowed.' };
+    }
+
     const { db } = getFirebaseAdmin();
     const trackNum = number.trim();
 
     try {
         const tracksRef = db.collection('tracks');
-        const trackNum = number.trim();
         const trackNumUpper = trackNum.toUpperCase();
 
         console.log(`[AddTrack] Searching for: '${trackNum}' (Upper: '${trackNumUpper}')`);
