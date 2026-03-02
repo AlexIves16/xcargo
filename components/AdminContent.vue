@@ -840,6 +840,7 @@ onUnmounted(() => {
 .action-btn.blue { background: linear-gradient(135deg, #2563EB, #1E40AF); }
 .action-btn.green { background: linear-gradient(135deg, #10B981, #059669); }
 .action-btn.orange { background: linear-gradient(135deg, #F59E0B, #D97706); }
+.action-btn.red { background: linear-gradient(135deg, #EF4444, #DC2626); }
 .action-btn.small { padding: 8px 15px; font-size: 0.85rem; }
 
 .info-text {

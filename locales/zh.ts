@@ -243,7 +243,7 @@ export default {
         clear_old_btn: '清除旧的已送达',
         clearing_old: '清除中...',
         confirm_clear_old: '删除一周前所有"已送达"状态的记录？',
-        clear_old_success: '已删除 {n} 条旧记录',
+        clear_old_success: '已删除 {n}条旧记录',
         clear_old_error: '清除时出错',
         bulk_delete: '删除',
         confirm_bulk_delete: '删除 {n} 个选定的包裹？'
