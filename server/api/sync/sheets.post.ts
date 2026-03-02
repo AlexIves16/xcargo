@@ -68,18 +68,49 @@ export default defineEventHandler(async (event) => {
         userAgent: event.node.req.headers['user-agent'] || 'unknown'
     });
 
-    // Запускаем синхронизацию в фоне
-    console.log('[Sync] Starting background sync process...');
-    processSyncInBackground(SPREADSHEET_ID, config);
-
-    console.log('[Sync] Sync initiated successfully, returning response to client');
-    return { 
-        success: true, 
-        message: 'Sync started in background', 
-        estimatedTime: '15-30 minutes for large datasets',
-        direction: 'one-way: Google Sheets -> Firestore DB',
-        startedAt: new Date().toISOString()
-    };
+    // Для админ-панели выполняем синхронизацию синхронно с таймаутом
+    console.log('[Sync] Starting sync process synchronously for admin panel...');
+    
+    // Устанавливаем таймаут в 60 секунд для админ-панели
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Sync timeout: exceeded 60 seconds')), 60000);
+    });
+    
+    // Выполняем синхронизацию и ждем результат
+    const syncResultPromise = processSyncInBackground(SPREADSHEET_ID, config);
+    
+    try {
+        // Ждем завершения синхронизации или таймаута
+        const stats = await Promise.race([syncResultPromise, timeoutPromise]);
+        
+        console.log('[Sync] Sync completed successfully, returning stats to client');
+        return { 
+            success: true, 
+            message: 'Sync completed successfully', 
+            stats: stats || { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 },
+            direction: 'one-way: Google Sheets -> Firestore DB',
+            completedAt: new Date().toISOString()
+        };
+    } catch (error: any) {
+        console.error('[Sync] Error during sync:', error);
+        
+        // Снимаем блокировку в случае ошибки
+        const syncLockRef = db.collection('system').doc('sync-lock');
+        await syncLockRef.update({
+            active: false,
+            error: error.message,
+            errorTime: Timestamp.now(),
+            completedSuccessfully: false,
+            errorMessage: error.message.substring(0, 500)
+        });
+        
+        return {
+            success: false,
+            message: 'Sync failed: ' + error.message,
+            error: error.message,
+            stats: { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 }
+        };
+    }
 });
 
 async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
@@ -339,6 +370,9 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         console.log('[Sync] Sync process finished successfully after ' + duration + ' seconds');
         console.log('[Sync] One-way sync complete: Google Sheets -> Firestore DB only');
 
+        // Return stats for admin panel
+        return stats;
+
     } catch (error: any) {
         console.error('[Sync] Background sync failed:', error);
         console.error('[Sync] Error details:', {
@@ -361,6 +395,9 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         } catch (cleanupError) {
             console.error('[Sync] Error cleaning up sync lock:', cleanupError);
         }
+        
+        // Re-throw error so it can be caught by the main handler
+        throw error;
     }
 }
 
