@@ -68,49 +68,18 @@ export default defineEventHandler(async (event) => {
         userAgent: event.node.req.headers['user-agent'] || 'unknown'
     });
 
-    // Для админ-панели выполняем синхронизацию синхронно с таймаутом
-    console.log('[Sync] Starting sync process synchronously for admin panel...');
-    
-    // Устанавливаем таймаут в 60 секунд для админ-панели
-    const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Sync timeout: exceeded 60 seconds')), 60000);
-    });
-    
-    // Выполняем синхронизацию и ждем результат
-    const syncResultPromise = processSyncInBackground(SPREADSHEET_ID, config);
-    
-    try {
-        // Ждем завершения синхронизации или таймаута
-        const stats = await Promise.race([syncResultPromise, timeoutPromise]);
-        
-        console.log('[Sync] Sync completed successfully, returning stats to client');
-        return { 
-            success: true, 
-            message: 'Sync completed successfully', 
-            stats: stats || { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 },
-            direction: 'one-way: Google Sheets -> Firestore DB',
-            completedAt: new Date().toISOString()
-        };
-    } catch (error: any) {
-        console.error('[Sync] Error during sync:', error);
-        
-        // Снимаем блокировку в случае ошибки
-        const syncLockRef = db.collection('system').doc('sync-lock');
-        await syncLockRef.update({
-            active: false,
-            error: error.message,
-            errorTime: Timestamp.now(),
-            completedSuccessfully: false,
-            errorMessage: error.message.substring(0, 500)
-        });
-        
-        return {
-            success: false,
-            message: 'Sync failed: ' + error.message,
-            error: error.message,
-            stats: { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 }
-        };
-    }
+    // Запускаем синхронизацию в фоне
+    console.log('[Sync] Starting background sync process...');
+    processSyncInBackground(SPREADSHEET_ID, config);
+
+    console.log('[Sync] Sync initiated successfully, returning response to client');
+    return { 
+        success: true, 
+        message: 'Sync started in background', 
+        estimatedTime: '15-30 minutes for large datasets',
+        direction: 'one-way: Google Sheets -> Firestore DB',
+        startedAt: new Date().toISOString()
+    };
 });
 
 async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
@@ -189,16 +158,18 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         // --- PROCESS FIRESTORE TRACKS INCREMENTALLY ---
         console.log('[Sync] Processing Firestore tracks incrementally...');
         
-        const BATCH_SIZE = 25; // Очень маленький размер батча для надежности
+        const BATCH_SIZE = 250; // Increased batch size for better performance
         let lastDoc = null;
         let totalProcessed = 0;
         let stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
         
-        // Process Firestore in very small batches
+        // Process Firestore in batches with performance tracking
         let batchNumber = 0;
+        let lastProgressLog = Date.now();
+        const logInterval = 30000; // Log progress every 30 seconds
+        
         do {
             batchNumber++;
-            console.log(`[Sync] Processing batch #${batchNumber} starting from document ${totalProcessed + 1}...`);
             
             let query = db.collection('tracks').limit(BATCH_SIZE);
             if (lastDoc) {
@@ -206,7 +177,6 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             }
             
             const snapshot = await query.get();
-            console.log(`[Sync] Retrieved batch of ${snapshot.size} documents for batch #${batchNumber}`);
             
             const batch = db.batch();
             const notificationsQueue = [];
@@ -217,7 +187,6 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 const trackNum = trackData.number as string;
                 
                 if (!trackNum) {
-                    console.warn(`[Sync] Skipping invalid track without number: ${doc.id}`);
                     continue;
                 }
                 
@@ -226,7 +195,6 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 
                 if (!sheetRow) {
                     // Track exists in DB but not in sheet - skip (one-way sync: sheet -> DB only)
-                    console.log(`[Sync] Track ${trackNum} exists in DB but not in sheet, skipping (one-way sync)`);
                     continue;
                 } else {
                     // Track exists in both - sync statuses if different
@@ -235,7 +203,6 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                     if (!Array.isArray(history)) history = [];
 
                     if (sheetRow.chinaStatus && sheetRow.chinaStatus !== trackData.lastChinaStatus) {
-                        console.log(`[Sync] Track ${trackNum} china status changed: ${trackData.lastChinaStatus} -> ${sheetRow.chinaStatus}`);
                         history.push({
                             status: sheetRow.chinaStatus,
                             location: 'Китай',
@@ -245,7 +212,6 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                     }
 
                     if (sheetRow.secondaryStatus && sheetRow.secondaryStatus !== trackData.lastSecondaryStatus) {
-                        console.log(`[Sync] Track ${trackNum} secondary status changed: ${trackData.lastSecondaryStatus} -> ${sheetRow.secondaryStatus}`);
                         history.push({
                             status: sheetRow.secondaryStatus,
                             location: 'International',
@@ -264,85 +230,78 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                         });
                         stats.updatedInDb++;
 
-                        // Log the update details
-                        console.log(`[Sync] 🔄 Updated track ${trackNum} in DB:`, {
-                            oldChinaStatus: trackData.lastChinaStatus,
-                            newChinaStatus: sheetRow.chinaStatus,
-                            oldSecondaryStatus: trackData.lastSecondaryStatus,
-                            newSecondaryStatus: sheetRow.secondaryStatus,
-                            source: trackData.source || 'unknown'
-                        });
-
                         if (trackData.userId) {
                             const newStatus = sheetRow.secondaryStatus || sheetRow.chinaStatus || '';
-                            console.log(`[Sync] Queuing notification for user ${trackData.userId} about track ${trackNum} status: ${newStatus}`);
                             notificationsQueue.push({
                                 userId: trackData.userId as string,
                                 trackNumber: trackNum,
                                 newStatus: newStatus
                             });
                         }
-                    } else {
-                        console.log(`[Sync] Track ${trackNum} unchanged, no update needed`);
                     }
                 }
             }
 
             // Execute Firestore batch if we have updates
-            if (notificationsQueue.length > 0 || snapshot.docs.length > 0) {  // Check if batch has operations
-                console.log(`[Sync] Executing Firestore batch with potential operations for batch #${batchNumber}`);
+            if (notificationsQueue.length > 0 || stats.updatedInDb > 0) {  // Check if batch has operations
                 await batch.commit();
-                console.log(`[Sync] Committed Firestore batch #${batchNumber} with ${notificationsQueue.length} potential updates`);
-            } else {
-                console.log(`[Sync] Batch #${batchNumber} had no updates to commit`);
             }
 
-            // Process notifications
+            // Process notifications in bulk
             if (notificationsQueue.length > 0) {
-                console.log(`[Sync] Processing ${notificationsQueue.length} notifications from batch #${batchNumber}`);
-                for (const notification of notificationsQueue) {
-                    try {
-                        const userSnap = await db.collection('users').doc(notification.userId).get();
-                        const userData = userSnap.data();
+                // Process notifications in batches for efficiency
+                const MAX_FCM_BATCH_SIZE = 10; // Reduced batch size for reliability
+                
+                for (let i = 0; i < notificationsQueue.length; i += MAX_FCM_BATCH_SIZE) {
+                    const batchNotifications = notificationsQueue.slice(i, i + MAX_FCM_BATCH_SIZE);
+                    
+                    // Process each notification in the batch
+                    for (const notification of batchNotifications) {
+                        try {
+                            const userSnap = await db.collection('users').doc(notification.userId).get();
+                            const userData = userSnap.data();
 
-                        if (userData?.fcmToken) {
-                            const message = {
-                                token: userData.fcmToken,
-                                notification: {
-                                    title: '📦 Обновление статуса',
-                                    body: `Посылка ${notification.trackNumber}: ${notification.newStatus}`
-                                },
-                                data: {
-                                    trackNumber: notification.trackNumber,
-                                    url: '/dashboard'
-                                }
-                            };
+                            if (userData?.fcmToken) {
+                                const message = {
+                                    token: userData.fcmToken,
+                                    notification: {
+                                        title: '📦 Обновление статуса',
+                                        body: `Посылка ${notification.trackNumber}: ${notification.newStatus}`
+                                    },
+                                    data: {
+                                        trackNumber: notification.trackNumber,
+                                        url: '/dashboard'
+                                    }
+                                };
 
-                            await messaging.send(message);
-                            stats.notificationsSent++;
-                            console.log(`[FCM] ✅ Notification sent to ${notification.userId} for ${notification.trackNumber}`);
-                        } else {
-                            console.log(`[FCM] ℹ️ No FCM token found for user ${notification.userId}`);
+                                await messaging.send(message);
+                                stats.notificationsSent++;
+                            }
+                        } catch (fcmError: any) {
+                            console.error(`[FCM] Error sending to ${notification.userId}:`, fcmError.message);
                         }
-                    } catch (fcmError: any) {
-                        console.error(`[FCM] ❌ Error sending to ${notification.userId}:`, fcmError.message);
+                    }
+                    
+                    // Small delay between notification batches to prevent overwhelming FCM
+                    if (i + MAX_FCM_BATCH_SIZE < notificationsQueue.length) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
                 }
             }
 
             totalProcessed += snapshot.size;
-            lastDoc = snapshot.docs[snapshot.docs.length - 1];
-            console.log(`[Sync] Batch #${batchNumber} completed. Processed total: ${totalProcessed}, Stats:`, stats);
-
-            // Освобождаем память и делаем паузу
-            if (global.gc) {
-                console.log('[Sync] Triggering garbage collection after batch #${batchNumber}...');
-                global.gc();
-            }
             
-            // Пауза между батчами для предотвращения превышения времени
-            console.log(`[Sync] Waiting 1 second before next batch...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Log progress periodically instead of every batch
+            const now = Date.now();
+            if (now - lastProgressLog > logInterval) {
+                console.log(`[Sync] Progress: Processed ${totalProcessed} tracks, Stats:`, stats);
+                lastProgressLog = now;
+            }
+
+            lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+            // Brief pause between batches to prevent overwhelming the system
+            await new Promise(resolve => setTimeout(resolve, 50));
         } while (lastDoc);
 
         // Process sheet-only entries (add missing tracks from sheet to DB)
@@ -478,18 +437,15 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
                 continue;
             }
 
-            if (processed % 100 === 0) {
+            if (processed % 500 === 0) {
                 console.log(`[Sync] Progress: Processed ${processed}/${sheetRows.size} sheet entries...`);
             }
-            
-            console.log(`[Sync] Checking if track ${trackNum} exists in Firestore...`);
             
             // Check if this track exists in Firestore
             const docSnapshot = await db.collection('tracks').where('number', '==', trackNum).limit(1).get();
             
             if (docSnapshot.empty) {
                 // Track exists in sheet but not in DB - add to DB
-                console.log(`[Sync] Track ${trackNum} exists in sheet but not in DB, adding to Firestore`);
                 const newDocRef = db.collection('tracks').doc();
 
                 // Initial History
@@ -528,16 +484,13 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
                 
                 stats.addedToDb++;
                 addedToDbCount++;
-                console.log(`[Sync] ✅ Added new track ${trackNum} from sheet to DB (row ${sheetRow.rowIndex})`);
             } else {
-                console.log(`[Sync] Track ${trackNum} already exists in Firestore, skipping`);
                 alreadyExistsCount++;
             }
             
             // Small pause to prevent overwhelming the system
-            if (processed % 50 === 0) {
-                console.log(`[Sync] Taking brief pause at entry ${processed}...`);
-                await new Promise(resolve => setTimeout(resolve, 50)); // Brief pause every 50 entries
+            if (processed % 200 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 25)); // Brief pause every 200 entries
             }
         }
         
