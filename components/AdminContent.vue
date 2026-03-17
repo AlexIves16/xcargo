@@ -542,10 +542,7 @@ const syncWithSheets = async () => {
     try {
         const res = await $fetch('/api/sync/sheets', { method: 'POST' });
         if (res.success) {
-            alert(t('admin.upload_complete')
-                .replace('{updated}', res.stats.updatedInDb + res.stats.updatedInSheet)
-                .replace('{created}', res.stats.addedToDb + res.stats.addedToSheet)
-                .replace('{errors}', '0'));
+            alert('Синхронизация запущена в фоне. Ожидаемое время: 15-30 минут для больших наборов данных.');
             resetPagination(); // Will re-trigger listener setup if needed, or just let listener handle it
             // Ideally onSnapshot updates automatically if docs are added/modified
             // But if we used an API that touches backend directly without client SDK seeing it immediately?
