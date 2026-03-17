@@ -158,7 +158,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         // --- PROCESS FIRESTORE TRACKS INCREMENTALLY ---
         console.log('[Sync] Обработка треков в Firestore инкрементально...');
         
-        const BATCH_SIZE = 250; // Increased batch size for better performance
+        const BATCH_SIZE = 500; // Увеличенный размер пакета для лучшей производительности (было 250)
         let lastDoc = null;
         let totalProcessed = 0;
         let stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
@@ -166,7 +166,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         // Process Firestore in batches with performance tracking
         let batchNumber = 0;
         let lastProgressLog = Date.now();
-        const logInterval = 30000; // Log progress every 30 seconds
+        const logInterval = 15000; // Log progress every 15 seconds (more frequent for better visibility)
         
         // Ensure stats is properly initialized
         if (!stats) {
@@ -185,6 +185,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             
             const batch = db.batch();
             const notificationsQueue = [];
+            const userIdsToFetch = new Set<string>();
 
             // Process each document individually
             for (const doc of snapshot.docs) {
@@ -242,6 +243,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                                 trackNumber: trackNum,
                                 newStatus: newStatus
                             });
+                            userIdsToFetch.add(trackData.userId as string);
                         }
                     }
                 }
@@ -252,45 +254,69 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 await batch.commit();
             }
 
-            // Process notifications in bulk
-            if (notificationsQueue.length > 0) {
-                // Process notifications in batches for efficiency
-                const MAX_FCM_BATCH_SIZE = 10; // Reduced batch size for reliability
+            // Process notifications with optimized user token fetching
+            if (notificationsQueue.length > 0 && userIdsToFetch.size > 0) {
+                // Fetch all user tokens in parallel using getAll
+                const userTokensMap = new Map<string, string>();
+                const userRefs = Array.from(userIdsToFetch).map(userId => 
+                    db.collection('users').doc(userId)
+                );
                 
-                for (let i = 0; i < notificationsQueue.length; i += MAX_FCM_BATCH_SIZE) {
-                    const batchNotifications = notificationsQueue.slice(i, i + MAX_FCM_BATCH_SIZE);
-                    
-                    // Process each notification in the batch
-                    for (const notification of batchNotifications) {
-                        try {
-                            const userSnap = await db.collection('users').doc(notification.userId).get();
-                            const userData = userSnap.data();
-
+                try {
+                    const userDocs = await db.getAll(...userRefs);
+                    userDocs.forEach((doc, index) => {
+                        if (doc.exists) {
+                            const userData = doc.data();
                             if (userData?.fcmToken) {
-                                const message = {
-                                    token: userData.fcmToken,
-                                    notification: {
-                                        title: '📦 Обновление статуса',
-                                        body: `Посылка ${notification.trackNumber}: ${notification.newStatus}`
-                                    },
-                                    data: {
-                                        trackNumber: notification.trackNumber,
-                                        url: '/dashboard'
-                                    }
-                                };
-
-                                await messaging.send(message);
-                                stats.notificationsSent++;
+                                userTokensMap.set(Array.from(userIdsToFetch)[index], userData.fcmToken);
                             }
-                        } catch (fcmError: any) {
-                            console.error(`[FCM] Error sending to ${notification.userId}:`, fcmError.message);
+                        }
+                    });
+                    
+                    // Send all notifications in parallel batches
+                    const MAX_FCM_BATCH_SIZE = 500; // FCM supports up to 500 messages per batch
+                    const notificationBatches = [];
+                    
+                    for (let i = 0; i < notificationsQueue.length; i += MAX_FCM_BATCH_SIZE) {
+                        const batchNotifications = notificationsQueue.slice(i, i + MAX_FCM_BATCH_SIZE);
+                        const messages = batchNotifications
+                            .filter(n => userTokensMap.has(n.userId))
+                            .map(notification => ({
+                                token: userTokensMap.get(notification.userId)!,
+                                notification: {
+                                    title: '📦 Обновление статуса',
+                                    body: `Посылка ${notification.trackNumber}: ${notification.newStatus}`
+                                },
+                                data: {
+                                    trackNumber: notification.trackNumber,
+                                    url: '/dashboard'
+                                }
+                            }));
+                        
+                        if (messages.length > 0) {
+                            notificationBatches.push(messages);
                         }
                     }
                     
-                    // Small delay between notification batches to prevent overwhelming FCM
-                    if (i + MAX_FCM_BATCH_SIZE < notificationsQueue.length) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    }
+                    // Send all batches in parallel using sendEach (FCM method)
+                    const sendPromises = notificationBatches.map(batch => 
+                        messaging.sendEach(batch).then(response => {
+                            return response;
+                        }).catch((err: any) => {
+                            console.error(`[FCM] Error sending batch:`, err.message);
+                            return null;
+                        })
+                    );
+                    
+                    const results = await Promise.all(sendPromises);
+                    results.forEach((result: any) => {
+                        if (result) {
+                            stats.notificationsSent += result.successCount || 0;
+                        }
+                    });
+                    
+                } catch (error: any) {
+                    console.error(`[FCM] Error fetching user tokens:`, error.message);
                 }
             }
 
@@ -305,8 +331,8 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
             lastDoc = snapshot.docs[snapshot.docs.length - 1];
 
-            // Brief pause between batches to prevent overwhelming the system
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Minimal pause between batches (no longer needed with larger batches)
+            await new Promise(resolve => setTimeout(resolve, 10));
         } while (lastDoc);
 
         // Process sheet-only entries (add missing tracks from sheet to DB)
@@ -428,22 +454,39 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
         const firestoreCount = firestoreCountSnapshot.data().count;
         console.log(`[Sync] Текущее количество треков в Firestore: ${firestoreCount}`);
         
-        // Process each sheet row to see if it exists in Firestore
+        // Process each sheet row to see if it exists in Firestore - OPTIMIZED WITH BATCH OPERATIONS
         let processed = 0;
         let addedToDbCount = 0;
         let alreadyExistsCount = 0;
         let invalidTrackNumbers = [];
         
+        // Fetch ALL existing tracks from Firestore at once for efficient lookup
+        console.log('[Sync] Загрузка всех существующих треков из Firestore для быстрой проверки...');
+        const allTracksSnapshot = await db.collection('tracks').get();
+        const existingTrackNumbers = new Set<string>();
+        
+        allTracksSnapshot.forEach((doc: any) => {
+            const trackData = doc.data();
+            if (trackData.number) {
+                existingTrackNumbers.add(trackData.number as string);
+            }
+        });
+
+        console.log(`[Sync] Найдено ${existingTrackNumbers.size} существующих треков в Firestore`);
+        
+        // Now process sheet rows with instant lookups
+        const BATCH_SIZE = 500; // Batch size for adding new tracks
+        let batch = db.batch();
+        let batchCount = 0;
+        
         for (const [trackNum, sheetRow] of sheetRows.entries()) {
             processed++;
             if (!trackNum) {
-                console.log(`[Sync] Пропускаем пустой номер трека в таблице`);
                 continue;
             }
 
             // Validate track number format
             if (!isValidTrackNumber(trackNum)) {
-                console.log(`[Sync] ❌ НЕДЕЙСТВИТЕЛЬНЫЙ НОМЕР ТРЕКА в таблице: "${trackNum}" в строке ${sheetRow.rowIndex}`);
                 invalidTrackNumbers.push({
                     trackNumber: trackNum,
                     rowIndex: sheetRow.rowIndex,
@@ -453,14 +496,8 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
                 continue;
             }
 
-            if (processed % 500 === 0) {
-                console.log(`[Sync] Прогресс: Обработано ${processed}/${sheetRows.size} записей в таблице...`);
-            }
-            
-            // Check if this track exists in Firestore
-            const docSnapshot = await db.collection('tracks').where('number', '==', trackNum).limit(1).get();
-            
-            if (docSnapshot.empty) {
+            // Check if this track exists in Firestore using pre-loaded data (instant lookup!)
+            if (!existingTrackNumbers.has(trackNum)) {
                 // Track exists in sheet but not in DB - add to DB
                 const newDocRef = db.collection('tracks').doc();
 
@@ -481,7 +518,7 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
                     });
                 }
 
-                await newDocRef.set({
+                batch.set(newDocRef, {
                     number: trackNum,
                     lastChinaStatus: sheetRow.chinaStatus || '',
                     lastSecondaryStatus: sheetRow.secondaryStatus || '',
@@ -498,17 +535,33 @@ async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheet
                     }
                 });
                 
-                stats.addedToDb++;
+                batchCount++;
                 addedToDbCount++;
+                
+                // Commit batch when full or at the end
+                if (batchCount >= BATCH_SIZE) {
+                    await batch.commit();
+                    console.log(`[Sync] Добавлен пакет из ${BATCH_SIZE} новых треков (всего: ${addedToDbCount})`);
+                    batch = db.batch();
+                    batchCount = 0;
+                }
             } else {
                 alreadyExistsCount++;
             }
             
-            // Small pause to prevent overwhelming the system
-            if (processed % 200 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 25)); // Brief pause every 200 entries
+            // Progress logging every 1000 entries
+            if (processed % 1000 === 0) {
+                console.log(`[Sync] Прогресс: Обработано ${processed}/${sheetRows.size} записей в таблице...`);
             }
         }
+        
+        // Commit remaining batch
+        if (batchCount > 0) {
+            await batch.commit();
+            console.log(`[Sync] Добавлен финальный пакет из ${batchCount} новых треков`);
+        }
+        
+        stats.addedToDb = addedToDbCount;
         
         console.log('[Sync] Завершена обработка записей только в таблице. Результат:', {
             totalProcessed: processed,
