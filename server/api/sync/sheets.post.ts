@@ -186,6 +186,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             const batch = db.batch();
             const notificationsQueue = [];
             const userIdsToFetch = new Set<string>();
+            let hasUpdatesInBatch = false; // Track if current batch has updates
 
             // Process each document individually
             for (const doc of snapshot.docs) {
@@ -235,6 +236,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                             updatedAt: Timestamp.now()
                         });
                         stats.updatedInDb++;
+                        hasUpdatesInBatch = true; // Mark that this batch has updates
 
                         if (trackData.userId) {
                             const newStatus = sheetRow.secondaryStatus || sheetRow.chinaStatus || '';
@@ -250,7 +252,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             }
 
             // Execute Firestore batch if we have updates
-            if (notificationsQueue.length > 0 || (stats && stats.updatedInDb > 0)) {  // Check if batch has operations
+            if (notificationsQueue.length > 0 || hasUpdatesInBatch) {  // Check if batch has operations
                 await batch.commit();
             }
 
