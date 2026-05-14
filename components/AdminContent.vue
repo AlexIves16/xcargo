@@ -131,6 +131,23 @@
         <input type="file" ref="receivedInput" class="hidden" @change="e => handleUpload(e, 'arrived')" accept=".xlsx, .xls" />
       </div>
 
+      <!-- Sync Logs Panel (Live) -->
+      <div v-if="syncLogs.length > 0 || syncing" class="glass-panel logs-panel">
+        <div class="panel-header-inline">
+          <h2 class="panel-title">{{ syncing ? '🔴 Синхронизация запущена' : '📝 Лог последней синхронизации' }}</h2>
+          <button @click="resetSyncLock" class="text-btn danger small-btn" title="Разблокировать синхронизацию вручную">
+            🔓 Сбросить блокировку
+          </button>
+        </div>
+        
+        <div class="logs-container" ref="logsContainer">
+          <div v-for="(log, idx) in syncLogs" :key="idx" class="log-line" :class="{ 'error': log.includes('ОШИБКА') }">
+            {{ log }}
+          </div>
+          <div v-if="syncing" class="log-line pulse">... ожидание новых данных ...</div>
+        </div>
+      </div>
+
       <!-- Unauthorized Alert -->
       <div v-if="!isAdmin" class="glass-panel error-panel">
          <strong class="error-title">{{ t('admin.error_access') }}</strong>
@@ -337,7 +354,10 @@ const chinaInput = ref(null);
 const receivedInput = ref(null);
 const unsubscribe = ref(null);
 const stats = ref(null);
+const syncLogs = ref([]);
+const logsContainer = ref(null);
 let statsInterval = null;
+let logsInterval = null;
 
 const pageSize = ref(50);
 const pageHistory = ref([]); 
@@ -555,7 +575,59 @@ const syncWithSheets = async () => {
         console.error(e);
         alert('Sync Error: ' + e.message);
     }
-    finally { syncing.value = false; }
+    finally { 
+        syncing.value = false;
+        startLogsPolling();
+    }
+};
+
+const fetchLogs = async () => {
+    try {
+        const res = await $fetch('/api/sync/logs');
+        if (res.success) {
+            syncLogs.value = res.logs;
+            syncing.value = res.active;
+            
+            // Auto scroll to bottom
+            if (logsContainer.value) {
+                setTimeout(() => {
+                    logsContainer.value.scrollTop = logsContainer.value.scrollHeight;
+                }, 100);
+            }
+
+            if (!res.active && logsInterval) {
+                stopLogsPolling();
+            }
+        }
+    } catch (e) {
+        console.error("Failed to fetch sync logs", e);
+    }
+};
+
+const startLogsPolling = () => {
+    stopLogsPolling();
+    fetchLogs();
+    logsInterval = setInterval(fetchLogs, 3000);
+};
+
+const stopLogsPolling = () => {
+    if (logsInterval) {
+        clearInterval(logsInterval);
+        logsInterval = null;
+    }
+};
+
+const resetSyncLock = async () => {
+    if (!confirm('Вы уверены, что хотите сбросить блокировку синхронизации? Делайте это только если уверены, что процесс действительно завис.')) return;
+    try {
+        const res = await $fetch('/api/debug/reset-sync-lock', { method: 'POST' });
+        if (res.success) {
+            alert('Блокировка сброшена');
+            fetchLogs();
+        }
+    } catch (e) {
+        alert('Ошибка при сбросе: ' + e.message);
+    }
 };
 
 const clearDatabase = async () => {
@@ -748,15 +820,17 @@ onMounted(() => {
    if (currentUser.value) {
        checkAdminAndLoad();
        fetchStats();
+       fetchLogs(); // Load initial logs
        // Start auto-refresh every 30 seconds
        statsInterval = setInterval(fetchStats, 30000);
+       // Start log polling if sync was already active
+       startLogsPolling();
    }
 });
 
 onUnmounted(() => {
-    if (statsInterval) {
-        clearInterval(statsInterval);
-    }
+    if (statsInterval) clearInterval(statsInterval);
+    stopLogsPolling();
 });
 
 const fetchStats = async () => {
@@ -1251,5 +1325,53 @@ onUnmounted(() => {
   .table-controls { width: 100%; justify-content: space-between; }
   .date-cell, .email-cell { display: none; }
   .desc-cell, .user-cell { max-width: 80px; }
+}
+
+/* Logs Panel */
+.logs-panel {
+  flex-shrink: 0;
+  border-left: 4px solid #F59E0B;
+}
+
+.panel-header-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.logs-container {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 15px;
+  height: 200px;
+  overflow-y: auto;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-line {
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  padding-left: 10px;
+}
+
+.log-line.error {
+  color: #f87171;
+  border-left-color: #ef4444;
+}
+
+.log-line.pulse {
+  animation: pulse-opacity 1.5s infinite;
+}
+
+@keyframes pulse-opacity {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
 }
 </style>

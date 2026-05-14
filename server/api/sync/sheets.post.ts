@@ -2,6 +2,7 @@ import { defineEventHandler } from 'h3';
 import { Timestamp } from 'firebase-admin/firestore';
 import { google } from 'googleapis';
 import { getFirebaseAdmin } from '../../utils/firebase';
+import { syncLog } from '../../utils/logger';
 
 function parseDateFromStatus(status: string): Date | null {
     if (!status) return null;
@@ -20,7 +21,7 @@ async function ensureArchiveSheet(sheets: any, spreadsheetId: string, authClient
         const archiveExists = meta.data.sheets.some((s: any) => s.properties.title === 'Архив');
         
         if (!archiveExists) {
-            console.log('[Sync] Создание листа "Архив"...');
+            await syncLog('Создание листа "Архив"...');
             await sheets.spreadsheets.batchUpdate({
                 spreadsheetId,
                 auth: authClient,
@@ -30,7 +31,6 @@ async function ensureArchiveSheet(sheets: any, spreadsheetId: string, authClient
                     }]
                 }
             });
-            // Add header to new archive sheet
             await sheets.spreadsheets.values.update({
                 spreadsheetId,
                 range: 'Архив!A1:E1',
@@ -39,69 +39,56 @@ async function ensureArchiveSheet(sheets: any, spreadsheetId: string, authClient
                 auth: authClient
             });
         }
-    } catch (e) {
-        console.error('[Sync] Ошибка при проверке/создании листа Архива:', e);
+    } catch (e: any) {
+        await syncLog('Ошибка при создании листа Архива: ' + e.message, true);
     }
 }
 
 export default defineEventHandler(async (event) => {
-    console.log('[Sync] Точка входа синхронизации активирована, инициализация...');
+    await syncLog('Точка входа синхронизации активирована');
     const config = useRuntimeConfig();
     const SPREADSHEET_ID = config.spreadsheetId;
-    const ARCHIVE_SHEET_NAME = 'Архив';
-    const ARCHIVE_THRESHOLD_DAYS = 14;
 
     if (!SPREADSHEET_ID) {
-        console.error('[Sync] SPREADSHEET_ID не определен в конфигурации среды выполнения');
-        throw new Error('SPREADSHEET_ID не определен в конфигурации среды выполнения');
+        await syncLog('SPREADSHEET_ID не определен!', true);
+        throw new Error('SPREADSHEET_ID не определен');
     }
 
-    // Проверяем, запущена ли уже синхронизация
     const { db } = getFirebaseAdmin();
     const syncLockRef = db.collection('system').doc('sync-lock');
     let lockDoc = await syncLockRef.get();
     
-    console.log('[Sync] Проверяем наличие существующих блокировок синхронизации...');
     if (lockDoc.exists && lockDoc.data()?.active) {
         const lockData = lockDoc.data();
         const lockTime = lockData.timestamp?.toDate();
-        const now = new Date();
-        const diffMinutes = (now.getTime() - lockTime.getTime()) / (1000 * 60);
+        const diffMinutes = (new Date().getTime() - lockTime.getTime()) / (1000 * 60);
         
-        if (diffMinutes < 10) {
-            console.log('[Sync] Синхронизация уже запущена, пропускаем дублирующий запрос');
-            return { 
-                success: false, 
-                error: 'Синхронизация уже запущена, дождитесь её завершения', 
-                currentlyRunning: true
-            };
+        if (diffMinutes < 15) {
+            await syncLog('Синхронизация уже запущена другим процессом');
+            return { success: false, error: 'Синхронизация уже запущена' };
         }
     }
 
-    // Устанавливаем блокировку
+    // Reset logs at the start of new sync
+    await db.collection('system').doc('sync-status').set({ logs: ['[Инициализация...]'], updatedAt: Timestamp.now() });
+
     await syncLockRef.set({
         active: true,
         timestamp: Timestamp.now(),
-        initiatedBy: event.node.req.headers['x-forwarded-for'] || 'unknown',
-        userAgent: event.node.req.headers['user-agent'] || 'unknown'
+        initiatedBy: event.node.req.headers['x-forwarded-for'] || 'unknown'
     });
 
-    // Запускаем синхронизацию в фоне
     processSyncInBackground(SPREADSHEET_ID, config);
 
-    return { 
-        success: true, 
-        message: 'Синхронизация запущена в фоне с автоматическим архивированием старых записей', 
-        startedAt: new Date().toISOString()
-    };
+    return { success: true, message: 'Синхронизация запущена' };
 });
 
 async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
     try {
         const startTime = Date.now();
-        const { db, messaging } = getFirebaseAdmin();
+        await syncLog('Фоновый процесс начат');
+        const { db } = getFirebaseAdmin();
 
-        // Google Sheets Auth
         let privateKey = config.googlePrivateKey as string;
         const clientEmail = config.googleClientEmail as string;
 
@@ -115,13 +102,11 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             scopes: ['https://www.googleapis.com/auth/spreadsheets']
         });
 
-        await authClient.authorize();
         const sheets = google.sheets({ version: 'v4', auth: authClient as any });
-
         const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID, auth: authClient as any });
         const firstSheetTitle = meta.data.sheets?.[0]?.properties?.title;
 
-        // 3. Get data and archive old rows
+        await syncLog('Загрузка данных из Google Sheets...');
         const rangeName = `${firstSheetTitle}!A:E`;
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
@@ -130,20 +115,22 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         });
 
         const rows = response.data.values || [];
-        if (rows.length <= 1) return;
+        if (rows.length <= 1) {
+            await syncLog('Таблица пуста');
+            await db.collection('system').doc('sync-lock').update({ active: false });
+            return;
+        }
 
         const header = rows[0];
         const dataRows = rows.slice(1);
         const activeRows = [header];
         const archiveRows = [];
-        const now = new Date();
-        const threshold = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
+        const threshold = new Date(Date.now() - (14 * 24 * 60 * 60 * 1000));
 
+        await syncLog(`Обработка ${dataRows.length} строк...`);
         for (const row of dataRows) {
             const status = row[1] || '';
-            const isDelivered = status.toLowerCase().includes('дата получ') || 
-                               status.toLowerCase().includes('получено') ||
-                               status.toLowerCase().includes('delivered');
+            const isDelivered = status.toLowerCase().includes('дата получ') || status.toLowerCase().includes('получено');
             
             if (isDelivered) {
                 const deliveryDate = parseDateFromStatus(status);
@@ -156,7 +143,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         }
 
         if (archiveRows.length > 0) {
-            console.log(`[Sync] Архивация ${archiveRows.length} записей...`);
+            await syncLog(`Архивация ${archiveRows.length} записей...`);
             await ensureArchiveSheet(sheets, SPREADSHEET_ID, authClient);
             await sheets.spreadsheets.values.append({
                 spreadsheetId: SPREADSHEET_ID,
@@ -173,6 +160,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 requestBody: { values: activeRows },
                 auth: authClient as any
             });
+            await syncLog('Таблица очищена от старых записей');
         }
 
         const sheetRows = new Map();
@@ -180,19 +168,13 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             const row = activeRows[i];
             const trackNum = row[0]?.toString().trim();
             if (trackNum) {
-                sheetRows.set(trackNum, {
-                    status: row[1] || '',
-                    date: row[2] || '',
-                    info: row[3] || '',
-                    additional: row[4] || ''
-                });
+                sheetRows.set(trackNum, { status: row[1] || '', info: row[3] || '', additional: row[4] || '' });
             }
         }
 
+        await syncLog('Обновление базы данных Firestore...');
         const allTracksSnapshot = await db.collection('tracks').get();
         const existingTrackNumbers = new Set();
-        
-        const BATCH_SIZE = 500;
         let batch = db.batch();
         let opsCount = 0;
 
@@ -217,7 +199,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 opsCount++;
             }
 
-            if (opsCount >= BATCH_SIZE) {
+            if (opsCount >= 400) {
                 await batch.commit();
                 batch = db.batch();
                 opsCount = 0;
@@ -226,8 +208,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
         for (const [trackNum, sheetData] of sheetRows.entries()) {
             if (!existingTrackNumbers.has(trackNum)) {
-                const newDocRef = db.collection('tracks').doc();
-                batch.set(newDocRef, {
+                batch.set(db.collection('tracks').doc(), {
                     number: trackNum,
                     status: sheetData.status,
                     info: sheetData.info,
@@ -237,8 +218,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 });
                 opsCount++;
             }
-
-            if (opsCount >= BATCH_SIZE) {
+            if (opsCount >= 400) {
                 await batch.commit();
                 batch = db.batch();
                 opsCount = 0;
@@ -247,14 +227,12 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
         if (opsCount > 0) await batch.commit();
 
-        const syncLockRef = db.collection('system').doc('sync-lock');
-        await syncLockRef.update({ active: false, lastSync: Timestamp.now() });
-
-        console.log('[Sync] Синхронизация завершена успешно за', (Date.now() - startTime) / 1000, 'сек');
+        await syncLog('Синхронизация завершена успешно!');
+        await db.collection('system').doc('sync-lock').update({ active: false, lastSync: Timestamp.now() });
 
     } catch (e: any) {
-        console.error('[Sync] Ошибка:', e);
+        await syncLog('КРИТИЧЕСКАЯ ОШИБКА: ' + e.message, true);
         const { db } = getFirebaseAdmin();
-        await db.collection('system').doc('sync-lock').update({ active: false, error: e.message });
+        await db.collection('system').doc('sync-lock').update({ active: false });
     }
 }
