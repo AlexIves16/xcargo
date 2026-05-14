@@ -96,7 +96,7 @@ export default defineNuxtConfig({
       autoprefixer: {},
     },
   },
-  modules: [],
+  modules: ['@nuxtjs/turnstile'],
   runtimeConfig: {
     // Server-only config (Private)
     googleClientEmail: process.env.GOOGLE_CLIENT_EMAIL,
