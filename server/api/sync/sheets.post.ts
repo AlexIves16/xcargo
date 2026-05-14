@@ -6,7 +6,8 @@ import { syncLog } from '../../utils/logger';
 
 function parseDateFromStatus(status: string): Date | null {
     if (!status) return null;
-    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/;
+    // Гибкий поиск даты: DD.MM.YYYY или DD/MM/YYYY или DD-MM-YYYY
+    const dateRegex = /(\d{2})[./-](\d{2})[./-](\d{4})/;
     const match = status.match(dateRegex);
     if (match) {
         const [_, day, month, year] = match;
@@ -45,7 +46,7 @@ async function ensureArchiveSheet(sheets: any, spreadsheetId: string, authClient
 }
 
 export default defineEventHandler(async (event) => {
-    await syncLog('Точка входа синхронизации активирована');
+    await syncLog('Синхронизация запрошена');
     const config = useRuntimeConfig();
     const SPREADSHEET_ID = config.spreadsheetId;
 
@@ -64,12 +65,11 @@ export default defineEventHandler(async (event) => {
         const diffMinutes = (new Date().getTime() - lockTime.getTime()) / (1000 * 60);
         
         if (diffMinutes < 15) {
-            await syncLog('Синхронизация уже запущена другим процессом');
-            return { success: false, error: 'Синхронизация уже запущена' };
+            await syncLog('Синхронизация уже выполняется');
+            return { success: false, error: 'Процесс уже запущен' };
         }
     }
 
-    // Reset logs at the start of new sync
     await db.collection('system').doc('sync-status').set({ logs: ['[Инициализация...]'], updatedAt: Timestamp.now() });
 
     await syncLockRef.set({
@@ -86,7 +86,7 @@ export default defineEventHandler(async (event) => {
 async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
     try {
         const startTime = Date.now();
-        await syncLog('Фоновый процесс начат');
+        await syncLog('Старт фонового процесса');
         const { db } = getFirebaseAdmin();
 
         let privateKey = config.googlePrivateKey as string;
@@ -106,7 +106,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID, auth: authClient as any });
         const firstSheetTitle = meta.data.sheets?.[0]?.properties?.title;
 
-        await syncLog('Загрузка данных из Google Sheets...');
+        await syncLog('Читаем Google Sheets...');
         const rangeName = `${firstSheetTitle}!A:E`;
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
@@ -127,10 +127,13 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         const archiveRows = [];
         const threshold = new Date(Date.now() - (14 * 24 * 60 * 60 * 1000));
 
-        await syncLog(`Обработка ${dataRows.length} строк...`);
+        await syncLog(`Анализ ${dataRows.length} строк таблицы...`);
         for (const row of dataRows) {
-            const status = row[1] || '';
-            const isDelivered = status.toLowerCase().includes('дата получ') || status.toLowerCase().includes('получено');
+            const status = (row[0] || '') + (row[1] || '') + (row[2] || ''); // Ищем дату в первых трех колонках для надежности
+            const isDelivered = status.toLowerCase().includes('дата получ') || 
+                               status.toLowerCase().includes('получено') ||
+                               status.toLowerCase().includes('delivered') ||
+                               status.toLowerCase().includes('выдан');
             
             if (isDelivered) {
                 const deliveryDate = parseDateFromStatus(status);
@@ -143,15 +146,20 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         }
 
         if (archiveRows.length > 0) {
-            await syncLog(`Архивация ${archiveRows.length} записей...`);
+            await syncLog(`Архивация ${archiveRows.length} старых записей...`);
             await ensureArchiveSheet(sheets, SPREADSHEET_ID, authClient);
-            await sheets.spreadsheets.values.append({
-                spreadsheetId: SPREADSHEET_ID,
-                range: 'Архив!A:E',
-                valueInputOption: 'RAW',
-                requestBody: { values: archiveRows },
-                auth: authClient as any
-            });
+            
+            // Chunked append for safety
+            for (let i = 0; i < archiveRows.length; i += 500) {
+                await sheets.spreadsheets.values.append({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'Архив!A:E',
+                    valueInputOption: 'RAW',
+                    requestBody: { values: archiveRows.slice(i, i + 500) },
+                    auth: authClient as any
+                });
+            }
+
             await sheets.spreadsheets.values.clear({ spreadsheetId: SPREADSHEET_ID, range: rangeName, auth: authClient as any });
             await sheets.spreadsheets.values.update({
                 spreadsheetId: SPREADSHEET_ID,
@@ -160,23 +168,35 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 requestBody: { values: activeRows },
                 auth: authClient as any
             });
-            await syncLog('Таблица очищена от старых записей');
+            await syncLog('Лист очищен от архивных записей');
         }
 
+        // Build sheet data map
         const sheetRows = new Map();
         for (let i = 1; i < activeRows.length; i++) {
             const row = activeRows[i];
             const trackNum = row[0]?.toString().trim();
             if (trackNum) {
-                sheetRows.set(trackNum, { status: row[1] || '', info: row[3] || '', additional: row[4] || '' });
+                sheetRows.set(trackNum, { 
+                    status: row[1] || '', 
+                    date: row[2] || '',
+                    info: row[3] || '', 
+                    additional: row[4] || '' 
+                });
             }
         }
 
-        await syncLog('Обновление базы данных Firestore...');
-        const allTracksSnapshot = await db.collection('tracks').get();
+        await syncLog(`Начинаем синхронизацию базы (${sheetRows.size} треков)...`);
+        
+        // OPTIMIZATION: Get only necessary fields and stream or process in chunks
+        // For 37k records, we'll use a snapshot with select to reduce payload
+        const allTracksSnapshot = await db.collection('tracks').select('number', 'status', 'info', 'additional').get();
         const existingTrackNumbers = new Set();
         let batch = db.batch();
         let opsCount = 0;
+        let totalProcessed = 0;
+
+        await syncLog(`Загружено ${allTracksSnapshot.size} записей из БД. Сравнение...`);
 
         for (const doc of allTracksSnapshot.docs) {
             const data = doc.data();
@@ -185,7 +205,11 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
             if (sheetRows.has(trackNum)) {
                 const sheetData = sheetRows.get(trackNum);
-                if (sheetData.status !== data.status || sheetData.info !== data.info || sheetData.additional !== data.additional) {
+                const hasChanged = sheetData.status !== data.status || 
+                                 sheetData.info !== data.info || 
+                                 sheetData.additional !== data.additional;
+                
+                if (hasChanged) {
                     batch.update(doc.ref, {
                         status: sheetData.status,
                         info: sheetData.info,
@@ -195,8 +219,14 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                     opsCount++;
                 }
             } else {
+                // Delete tracks no longer in active sheet (archived or manually removed)
                 batch.delete(doc.ref);
                 opsCount++;
+            }
+
+            totalProcessed++;
+            if (totalProcessed % 2000 === 0) {
+                await syncLog(`Проверено ${totalProcessed} записей...`);
             }
 
             if (opsCount >= 400) {
@@ -206,6 +236,8 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             }
         }
 
+        // Add new tracks
+        let newCount = 0;
         for (const [trackNum, sheetData] of sheetRows.entries()) {
             if (!existingTrackNumbers.has(trackNum)) {
                 batch.set(db.collection('tracks').doc(), {
@@ -217,6 +249,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                     updatedAt: Timestamp.now()
                 });
                 opsCount++;
+                newCount++;
             }
             if (opsCount >= 400) {
                 await batch.commit();
@@ -227,11 +260,11 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
         if (opsCount > 0) await batch.commit();
 
-        await syncLog('Синхронизация завершена успешно!');
+        await syncLog(`Успех! Новых: ${newCount}. Синхронизация завершена.`);
         await db.collection('system').doc('sync-lock').update({ active: false, lastSync: Timestamp.now() });
 
     } catch (e: any) {
-        await syncLog('КРИТИЧЕСКАЯ ОШИБКА: ' + e.message, true);
+        await syncLog('ОШИБКА: ' + (e.message || 'Неизвестная ошибка'), true);
         const { db } = getFirebaseAdmin();
         await db.collection('system').doc('sync-lock').update({ active: false });
     }
