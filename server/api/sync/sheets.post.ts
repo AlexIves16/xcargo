@@ -1,20 +1,63 @@
 import { defineEventHandler } from 'h3';
-import { getApps, getApp, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
+import { Timestamp } from 'firebase-admin/firestore';
 import { google } from 'googleapis';
+import { getFirebaseAdmin } from '../../utils/firebase';
+
+function parseDateFromStatus(status: string): Date | null {
+    if (!status) return null;
+    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/;
+    const match = status.match(dateRegex);
+    if (match) {
+        const [_, day, month, year] = match;
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    return null;
+}
+
+async function ensureArchiveSheet(sheets: any, spreadsheetId: string, authClient: any): Promise<void> {
+    try {
+        const meta = await sheets.spreadsheets.get({ spreadsheetId, auth: authClient });
+        const archiveExists = meta.data.sheets.some((s: any) => s.properties.title === 'Архив');
+        
+        if (!archiveExists) {
+            console.log('[Sync] Создание листа "Архив"...');
+            await sheets.spreadsheets.batchUpdate({
+                spreadsheetId,
+                auth: authClient,
+                requestBody: {
+                    requests: [{
+                        addSheet: { properties: { title: 'Архив' } }
+                    }]
+                }
+            });
+            // Add header to new archive sheet
+            await sheets.spreadsheets.values.update({
+                spreadsheetId,
+                range: 'Архив!A1:E1',
+                valueInputOption: 'RAW',
+                requestBody: { values: [['Трек номер', 'Статус', 'Дата', 'Инфо', 'Доп']] },
+                auth: authClient
+            });
+        }
+    } catch (e) {
+        console.error('[Sync] Ошибка при проверке/создании листа Архива:', e);
+    }
+}
 
 export default defineEventHandler(async (event) => {
     console.log('[Sync] Точка входа синхронизации активирована, инициализация...');
     const config = useRuntimeConfig();
     const SPREADSHEET_ID = config.spreadsheetId;
+    const ARCHIVE_SHEET_NAME = 'Архив';
+    const ARCHIVE_THRESHOLD_DAYS = 14;
+
     if (!SPREADSHEET_ID) {
         console.error('[Sync] SPREADSHEET_ID не определен в конфигурации среды выполнения');
         throw new Error('SPREADSHEET_ID не определен в конфигурации среды выполнения');
     }
 
     // Проверяем, запущена ли уже синхронизация
-    const db = getFirestore();
+    const { db } = getFirebaseAdmin();
     const syncLockRef = db.collection('system').doc('sync-lock');
     let lockDoc = await syncLockRef.get();
     
@@ -25,42 +68,17 @@ export default defineEventHandler(async (event) => {
         const now = new Date();
         const diffMinutes = (now.getTime() - lockTime.getTime()) / (1000 * 60);
         
-        console.log('[Sync] Найдена существующая блокировка, проверяем возраст:', {
-            lockAgeMinutes: diffMinutes,
-            threshold: 10,
-            initiatedBy: lockData?.initiatedBy,
-            userAgent: lockData?.userAgent
-        });
-        
-        // Если блокировка старше 10 минут, считаем её застывшей
         if (diffMinutes < 10) {
             console.log('[Sync] Синхронизация уже запущена, пропускаем дублирующий запрос');
             return { 
                 success: false, 
                 error: 'Синхронизация уже запущена, дождитесь её завершения', 
-                currentlyRunning: true,
-                lockAgeMinutes: Math.round(diffMinutes),
-                initiatedBy: lockData?.initiatedBy
+                currentlyRunning: true
             };
-        } else {
-            console.log('[Sync] Очистка устаревшей блокировки синхронизации (возраст: ' + Math.round(diffMinutes) + ' минут)');
-            await syncLockRef.update({
-                active: false,
-                timestamp: Timestamp.now(),
-                clearedStale: true,
-                previousLockInfo: {
-                    initiatedBy: lockData?.initiatedBy,
-                    userAgent: lockData?.userAgent,
-                    originalTimestamp: lockData?.timestamp
-                }
-            });
-            // Refresh the lock document after update
-            lockDoc = await syncLockRef.get();
         }
     }
 
     // Устанавливаем блокировку
-    console.log('[Sync] Устанавливаем блокировку синхронизации...');
     await syncLockRef.set({
         active: true,
         timestamp: Timestamp.now(),
@@ -69,60 +87,28 @@ export default defineEventHandler(async (event) => {
     });
 
     // Запускаем синхронизацию в фоне
-    console.log('[Sync] Запуск фонового процесса синхронизации...');
     processSyncInBackground(SPREADSHEET_ID, config);
 
-    console.log('[Sync] Синхронизация успешно запущена, возвращаем ответ клиенту');
     return { 
         success: true, 
-        message: 'Синхронизация запущена в фоне', 
-        estimatedTime: '15-30 минут для больших наборов данных',
-        direction: 'односторонняя: Google Таблицы -> База данных Firestore',
+        message: 'Синхронизация запущена в фоне с автоматическим архивированием старых записей', 
         startedAt: new Date().toISOString()
     };
 });
 
 async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
-    console.log('[Sync] Инициализация фонового процесса синхронизации');
     try {
         const startTime = Date.now();
-        console.log('[Sync] Фоновая синхронизация начата в:', new Date(startTime).toISOString());
+        const { db, messaging } = getFirebaseAdmin();
 
-        // 1. Initialize Firebase Admin
-        let app;
-        const apps = getApps();
+        // Google Sheets Auth
         let privateKey = config.googlePrivateKey as string;
         const clientEmail = config.googleClientEmail as string;
 
-        // Проверяем наличие необходимых конфигурационных данных
-        if (!clientEmail || !privateKey) {
-            throw new Error('Missing Google Service Account credentials in runtime config');
-        }
-
-        // Handle escaped newlines if they exist
-        if (privateKey.includes('\\n')) {
+        if (privateKey && privateKey.includes('\\n')) {
             privateKey = privateKey.replace(/\\n/g, '\n');
         }
 
-        if (apps.length === 0) {
-            console.log('[Sync] Инициализация нового приложения Firebase...');
-            app = initializeApp({
-                credential: cert({
-                    projectId: config.firebaseProjectId || config.public.firebaseProjectId as string,
-                    clientEmail: clientEmail,
-                    privateKey: privateKey,
-                }),
-            });
-        } else {
-            console.log('[Sync] Использование существующего приложения Firebase...');
-            app = getApp();
-        }
-
-        const db = getFirestore(app);
-        const messaging = getMessaging(app);
-
-        // 2. Initialize Google Sheets Auth
-        console.log('[Sync] Инициализация аутентификации Google Таблиц...');
         const authClient = new google.auth.JWT({
             email: clientEmail,
             key: privateKey,
@@ -130,450 +116,145 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         });
 
         await authClient.authorize();
-        console.log('[Sync] Аутентификация Google Таблиц прошла успешно');
-
         const sheets = google.sheets({ version: 'v4', auth: authClient as any });
 
-        // --- GET SHEET NAME ---
-        console.log('[Sync] Получение метаданных электронной таблицы...');
-        const meta = await sheets.spreadsheets.get({
+        const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID, auth: authClient as any });
+        const firstSheetTitle = meta.data.sheets?.[0]?.properties?.title;
+
+        // 3. Get data and archive old rows
+        const rangeName = `${firstSheetTitle}!A:E`;
+        const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
+            range: rangeName,
             auth: authClient as any
         });
 
-        const firstSheetTitle = meta.data.sheets?.[0]?.properties?.title;
-        if (!firstSheetTitle) {
-            throw new Error('Could not find any sheets in the spreadsheet');
-        }
+        const rows = response.data.values || [];
+        if (rows.length <= 1) return;
 
-        const rangeName = `${firstSheetTitle}!A:E`;
-        console.log('[Sync] Использование листа:', firstSheetTitle);
-        console.log('[Sync] Диапазон для чтения:', rangeName);
+        const header = rows[0];
+        const dataRows = rows.slice(1);
+        const activeRows = [header];
+        const archiveRows = [];
+        const now = new Date();
+        const threshold = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
 
-        // --- LOAD ALL SHEET ROWS ONCE FOR EFFICIENT LOOKUPS ---
-        console.log('[Sync] Загрузка всех строк таблицы для эффективного поиска...');
-        const sheetRows = await getAllSheetRows(sheets, SPREADSHEET_ID, firstSheetTitle, authClient as any);
-        console.log(`[Sync] Загружено ${sheetRows.size} треков из таблицы для поиска`);
-
-        // --- PROCESS FIRESTORE TRACKS INCREMENTALLY ---
-        console.log('[Sync] Обработка треков в Firestore инкрементально...');
-        
-        const BATCH_SIZE = 500; // Увеличенный размер пакета для лучшей производительности (было 250)
-        let lastDoc = null;
-        let totalProcessed = 0;
-        let stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
-        
-        // Process Firestore in batches with performance tracking
-        let batchNumber = 0;
-        let lastProgressLog = Date.now();
-        const logInterval = 15000; // Log progress every 15 seconds (more frequent for better visibility)
-        
-        // Ensure stats is properly initialized
-        if (!stats) {
-            stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
-        }
-        
-        do {
-            batchNumber++;
+        for (const row of dataRows) {
+            const status = row[1] || '';
+            const isDelivered = status.toLowerCase().includes('дата получ') || 
+                               status.toLowerCase().includes('получено') ||
+                               status.toLowerCase().includes('delivered');
             
-            let query = db.collection('tracks').limit(BATCH_SIZE);
-            if (lastDoc) {
-                query = query.startAfter(lastDoc);
-            }
-            
-            const snapshot = await query.get();
-            
-            const batch = db.batch();
-            const notificationsQueue = [];
-            const userIdsToFetch = new Set<string>();
-            let hasUpdatesInBatch = false; // Track if current batch has updates
-
-            // Process each document individually
-            for (const doc of snapshot.docs) {
-                const trackData = doc.data();
-                const trackNum = trackData.number as string;
-                
-                if (!trackNum) {
+            if (isDelivered) {
+                const deliveryDate = parseDateFromStatus(status);
+                if (deliveryDate && deliveryDate < threshold) {
+                    archiveRows.push(row);
                     continue;
                 }
-                
-                // Look up in pre-loaded sheet data
-                const sheetRow = sheetRows.get(trackNum);
-                
-                if (!sheetRow) {
-                    // Track exists in DB but not in sheet - skip (one-way sync: sheet -> DB only)
-                    continue;
-                } else {
-                    // Track exists in both - sync statuses if different
-                    let changed = false;
-                    let history = trackData.history || [];
-                    if (!Array.isArray(history)) history = [];
-
-                    if (sheetRow.chinaStatus && sheetRow.chinaStatus !== trackData.lastChinaStatus) {
-                        history.push({
-                            status: sheetRow.chinaStatus,
-                            location: 'Китай',
-                            date: Timestamp.now()
-                        });
-                        changed = true;
-                    }
-
-                    if (sheetRow.secondaryStatus && sheetRow.secondaryStatus !== trackData.lastSecondaryStatus) {
-                        history.push({
-                            status: sheetRow.secondaryStatus,
-                            location: 'International',
-                            date: Timestamp.now()
-                        });
-                        changed = true;
-                    }
-
-                    if (changed) {
-                        batch.update(doc.ref, {
-                            lastChinaStatus: sheetRow.chinaStatus,
-                            lastSecondaryStatus: sheetRow.secondaryStatus,
-                            status: sheetRow.secondaryStatus || sheetRow.chinaStatus || 'updated',
-                            history: history,
-                            updatedAt: Timestamp.now()
-                        });
-                        stats.updatedInDb++;
-                        hasUpdatesInBatch = true; // Mark that this batch has updates
-
-                        if (trackData.userId) {
-                            const newStatus = sheetRow.secondaryStatus || sheetRow.chinaStatus || '';
-                            notificationsQueue.push({
-                                userId: trackData.userId as string,
-                                trackNumber: trackNum,
-                                newStatus: newStatus
-                            });
-                            userIdsToFetch.add(trackData.userId as string);
-                        }
-                    }
-                }
             }
-
-            // Execute Firestore batch if we have updates
-            if (notificationsQueue.length > 0 || hasUpdatesInBatch) {  // Check if batch has operations
-                await batch.commit();
-            }
-
-            // Process notifications with optimized user token fetching
-            if (notificationsQueue.length > 0 && userIdsToFetch.size > 0) {
-                // Fetch all user tokens in parallel using getAll
-                const userTokensMap = new Map<string, string>();
-                const userRefs = Array.from(userIdsToFetch).map(userId => 
-                    db.collection('users').doc(userId)
-                );
-                
-                try {
-                    const userDocs = await db.getAll(...userRefs);
-                    userDocs.forEach((doc, index) => {
-                        if (doc.exists) {
-                            const userData = doc.data();
-                            if (userData?.fcmToken) {
-                                userTokensMap.set(Array.from(userIdsToFetch)[index], userData.fcmToken);
-                            }
-                        }
-                    });
-                    
-                    // Send all notifications in parallel batches
-                    const MAX_FCM_BATCH_SIZE = 500; // FCM supports up to 500 messages per batch
-                    const notificationBatches = [];
-                    
-                    for (let i = 0; i < notificationsQueue.length; i += MAX_FCM_BATCH_SIZE) {
-                        const batchNotifications = notificationsQueue.slice(i, i + MAX_FCM_BATCH_SIZE);
-                        const messages = batchNotifications
-                            .filter(n => userTokensMap.has(n.userId))
-                            .map(notification => ({
-                                token: userTokensMap.get(notification.userId)!,
-                                notification: {
-                                    title: '📦 Обновление статуса',
-                                    body: `Посылка ${notification.trackNumber}: ${notification.newStatus}`
-                                },
-                                data: {
-                                    trackNumber: notification.trackNumber,
-                                    url: '/dashboard'
-                                }
-                            }));
-                        
-                        if (messages.length > 0) {
-                            notificationBatches.push(messages);
-                        }
-                    }
-                    
-                    // Send all batches in parallel using sendEach (FCM method)
-                    const sendPromises = notificationBatches.map(batch => 
-                        messaging.sendEach(batch).then(response => {
-                            return response;
-                        }).catch((err: any) => {
-                            console.error(`[FCM] Error sending batch:`, err.message);
-                            return null;
-                        })
-                    );
-                    
-                    const results = await Promise.all(sendPromises);
-                    results.forEach((result: any) => {
-                        if (result) {
-                            stats.notificationsSent += result.successCount || 0;
-                        }
-                    });
-                    
-                } catch (error: any) {
-                    console.error(`[FCM] Error fetching user tokens:`, error.message);
-                }
-            }
-
-            totalProcessed += snapshot.size;
-            
-            // Log progress periodically instead of every batch
-            const now = Date.now();
-            if (now - lastProgressLog > logInterval) {
-                console.log(`[Sync] Прогресс: Обработано ${totalProcessed} треков, Статистика:`, stats);
-                lastProgressLog = now;
-            }
-
-            lastDoc = snapshot.docs[snapshot.docs.length - 1];
-
-            // Minimal pause between batches (no longer needed with larger batches)
-            await new Promise(resolve => setTimeout(resolve, 10));
-        } while (lastDoc);
-
-        // Process sheet-only entries (add missing tracks from sheet to DB)
-        console.log('[Sync] Обработка записей только в таблице (добавление недостающих треков из таблицы в БД)...');
-        // Ensure stats is properly initialized before passing to function
-        if (!stats) {
-            stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
+            activeRows.push(row);
         }
-        await processSheetOnlyEntries(sheets, SPREADSHEET_ID, firstSheetTitle, db, authClient as any, stats, sheetRows);
-        
-        // IMPORTANT: We do NOT add records from DB to Sheet (one-way sync: Sheet -> DB only)
-        // All changes originate from Google Sheets and are pushed to Firestore DB
-        console.log('[Sync] Односторонняя синхронизация завершена: Google Таблицы -> База данных Firestore только');
 
-        const endTime = Date.now();
-        const duration = ((endTime - startTime) / 1000).toFixed(2);
-        
-        // Снимаем блокировку
-        const syncLockRef = db.collection('system').doc('sync-lock');
-        await syncLockRef.update({
-            active: false,
-            completedAt: Timestamp.now(),
-            durationSeconds: parseFloat(duration),
-            finalStats: stats,
-            completedSuccessfully: true
-        });
-
-        console.log(`[Sync] Фоновая синхронизация завершена за ${duration}с. Итоговая статистика:`, stats);
-        console.log('[Sync] Процесс синхронизации успешно завершен после ' + duration + ' секунд');
-        console.log('[Sync] Односторонняя синхронизация завершена: Google Таблицы -> База данных Firestore только');
-
-        // Return stats for admin panel
-        return stats;
-
-    } catch (error: any) {
-        console.error('[Sync] Фоновая синхронизация не удалась:', error);
-        console.error('[Sync] Детали ошибки:', {
-            message: error.message,
-            stack: error.stack,
-            name: error.name
-        });
-        
-        // Снимаем блокировку при ошибке
-        try {
-            const db = getFirestore();
-            const syncLockRef = db.collection('system').doc('sync-lock');
-            await syncLockRef.update({
-                active: false,
-                error: error.message,
-                errorTime: Timestamp.now(),
-                completedSuccessfully: false,
-                errorMessage: error.message.substring(0, 500) // Truncate long error messages
+        if (archiveRows.length > 0) {
+            console.log(`[Sync] Архивация ${archiveRows.length} записей...`);
+            await ensureArchiveSheet(sheets, SPREADSHEET_ID, authClient);
+            await sheets.spreadsheets.values.append({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'Архив!A:E',
+                valueInputOption: 'RAW',
+                requestBody: { values: archiveRows },
+                auth: authClient as any
             });
-        } catch (cleanupError) {
-            console.error('[Sync] Ошибка при очистке блокировки синхронизации:', cleanupError);
+            await sheets.spreadsheets.values.clear({ spreadsheetId: SPREADSHEET_ID, range: rangeName, auth: authClient as any });
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: SPREADSHEET_ID,
+                range: `${firstSheetTitle}!A1`,
+                valueInputOption: 'RAW',
+                requestBody: { values: activeRows },
+                auth: authClient as any
+            });
         }
-        
-        // Re-throw error so it can be caught by the main handler
-        throw error;
-    }
-}
 
-// Validate track number format (letters, numbers, spaces, hyphens only)
-function isValidTrackNumber(trackNum: string): boolean {
-    if (!trackNum || trackNum.trim().length === 0) return false;
-    // Allow only letters, numbers, spaces, and hyphens
-    const validPattern = /^[a-zA-Z0-9\s-]+$/;
-    return validPattern.test(trackNum.trim());
-}
-async function getAllSheetRows(sheets: any, spreadsheetId: string, sheetTitle: string, authClient: any) {
-    try {
-        const rangeName = `${sheetTitle}!A:E`;
-        const sheetResponse = await sheets.spreadsheets.values.get({
-            spreadsheetId: spreadsheetId,
-            range: rangeName,
-            auth: authClient
-        });
-
-        const rows = sheetResponse.data.values || [];
-        const sheetMap = new Map();
-        
-        if (rows.length > 1) {
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i];
-                const trackNum = row[0]?.toString().trim();
-                if (trackNum) {
-                    sheetMap.set(trackNum, {
-                        number: trackNum,
-                        chinaStatus: row[1]?.toString().trim() || '',
-                        secondaryStatus: row[2]?.toString().trim() || '',
-                        date: row[3] || '',
-                        rowIndex: i + 1
-                    });
-                }
+        const sheetRows = new Map();
+        for (let i = 1; i < activeRows.length; i++) {
+            const row = activeRows[i];
+            const trackNum = row[0]?.toString().trim();
+            if (trackNum) {
+                sheetRows.set(trackNum, {
+                    status: row[1] || '',
+                    date: row[2] || '',
+                    info: row[3] || '',
+                    additional: row[4] || ''
+                });
             }
         }
-        
-        return sheetMap;
-    } catch (error) {
-        console.error('[Sync] Error loading all sheet rows:', error);
-        return new Map(); // Return empty map if error
-    }
-}
 
-// Helper function to process entries that exist only in sheet
-async function processSheetOnlyEntries(sheets: any, spreadsheetId: string, sheetTitle: string, db: any, authClient: any, stats: any, sheetRows: Map<any, any>) {
-    try {
-        // Ensure stats object exists and has required properties
-        if (!stats) {
-            stats = { addedToDb: 0, updatedInDb: 0, notificationsSent: 0 };
-        }
-        if (typeof stats.addedToDb === 'undefined') stats.addedToDb = 0;
-        if (typeof stats.updatedInDb === 'undefined') stats.updatedInDb = 0;
-        if (typeof stats.notificationsSent === 'undefined') stats.notificationsSent = 0;
-        console.log(`[Sync] Обработка ${sheetRows.size} записей в таблице для поиска отсутствующих в Firestore`);
-        
-        // Get current count of tracks in Firestore for comparison
-        const firestoreCountSnapshot = await db.collection('tracks').count().get();
-        const firestoreCount = firestoreCountSnapshot.data().count;
-        console.log(`[Sync] Текущее количество треков в Firestore: ${firestoreCount}`);
-        
-        // Process each sheet row to see if it exists in Firestore - OPTIMIZED WITH BATCH OPERATIONS
-        let processed = 0;
-        let addedToDbCount = 0;
-        let alreadyExistsCount = 0;
-        let invalidTrackNumbers = [];
-        
-        // Fetch ALL existing tracks from Firestore at once for efficient lookup
-        console.log('[Sync] Загрузка всех существующих треков из Firestore для быстрой проверки...');
         const allTracksSnapshot = await db.collection('tracks').get();
-        const existingTrackNumbers = new Set<string>();
+        const existingTrackNumbers = new Set();
         
-        allTracksSnapshot.forEach((doc: any) => {
-            const trackData = doc.data();
-            if (trackData.number) {
-                existingTrackNumbers.add(trackData.number as string);
-            }
-        });
-
-        console.log(`[Sync] Найдено ${existingTrackNumbers.size} существующих треков в Firestore`);
-        
-        // Now process sheet rows with instant lookups
-        const BATCH_SIZE = 500; // Batch size for adding new tracks
+        const BATCH_SIZE = 500;
         let batch = db.batch();
-        let batchCount = 0;
-        
-        for (const [trackNum, sheetRow] of sheetRows.entries()) {
-            processed++;
-            if (!trackNum) {
-                continue;
-            }
+        let opsCount = 0;
 
-            // Validate track number format
-            if (!isValidTrackNumber(trackNum)) {
-                invalidTrackNumbers.push({
-                    trackNumber: trackNum,
-                    rowIndex: sheetRow.rowIndex,
-                    chinaStatus: sheetRow.chinaStatus,
-                    secondaryStatus: sheetRow.secondaryStatus
-                });
-                continue;
-            }
+        for (const doc of allTracksSnapshot.docs) {
+            const data = doc.data();
+            const trackNum = data.number;
+            existingTrackNumbers.add(trackNum);
 
-            // Check if this track exists in Firestore using pre-loaded data (instant lookup!)
-            if (!existingTrackNumbers.has(trackNum)) {
-                // Track exists in sheet but not in DB - add to DB
-                const newDocRef = db.collection('tracks').doc();
-
-                // Initial History
-                const history = [];
-                if (sheetRow.chinaStatus) {
-                    history.push({
-                        status: sheetRow.chinaStatus,
-                        location: 'Китай',
-                        date: Timestamp.now()
+            if (sheetRows.has(trackNum)) {
+                const sheetData = sheetRows.get(trackNum);
+                if (sheetData.status !== data.status || sheetData.info !== data.info || sheetData.additional !== data.additional) {
+                    batch.update(doc.ref, {
+                        status: sheetData.status,
+                        info: sheetData.info,
+                        additional: sheetData.additional,
+                        updatedAt: Timestamp.now()
                     });
-                }
-                if (sheetRow.secondaryStatus) {
-                    history.push({
-                        status: sheetRow.secondaryStatus,
-                        location: 'International',
-                        date: Timestamp.now()
-                    });
-                }
-
-                batch.set(newDocRef, {
-                    number: trackNum,
-                    lastChinaStatus: sheetRow.chinaStatus || '',
-                    lastSecondaryStatus: sheetRow.secondaryStatus || '',
-                    status: (sheetRow.secondaryStatus || sheetRow.chinaStatus || 'pending'),
-                    history: history,
-                    createdAt: Timestamp.now(),
-                    updatedAt: Timestamp.now(),
-                    source: 'sheet_sync',
-                    sheetRowIndex: sheetRow.rowIndex,
-                    sheetData: {
-                        chinaStatus: sheetRow.chinaStatus,
-                        secondaryStatus: sheetRow.secondaryStatus,
-                        date: sheetRow.date
-                    }
-                });
-                
-                batchCount++;
-                addedToDbCount++;
-                
-                // Commit batch when full or at the end
-                if (batchCount >= BATCH_SIZE) {
-                    await batch.commit();
-                    console.log(`[Sync] Добавлен пакет из ${BATCH_SIZE} новых треков (всего: ${addedToDbCount})`);
-                    batch = db.batch();
-                    batchCount = 0;
+                    opsCount++;
                 }
             } else {
-                alreadyExistsCount++;
+                batch.delete(doc.ref);
+                opsCount++;
             }
-            
-            // Progress logging every 1000 entries
-            if (processed % 1000 === 0) {
-                console.log(`[Sync] Прогресс: Обработано ${processed}/${sheetRows.size} записей в таблице...`);
+
+            if (opsCount >= BATCH_SIZE) {
+                await batch.commit();
+                batch = db.batch();
+                opsCount = 0;
             }
         }
-        
-        // Commit remaining batch
-        if (batchCount > 0) {
-            await batch.commit();
-            console.log(`[Sync] Добавлен финальный пакет из ${batchCount} новых треков`);
+
+        for (const [trackNum, sheetData] of sheetRows.entries()) {
+            if (!existingTrackNumbers.has(trackNum)) {
+                const newDocRef = db.collection('tracks').doc();
+                batch.set(newDocRef, {
+                    number: trackNum,
+                    status: sheetData.status,
+                    info: sheetData.info,
+                    additional: sheetData.additional,
+                    createdAt: Timestamp.now(),
+                    updatedAt: Timestamp.now()
+                });
+                opsCount++;
+            }
+
+            if (opsCount >= BATCH_SIZE) {
+                await batch.commit();
+                batch = db.batch();
+                opsCount = 0;
+            }
         }
-        
-        stats.addedToDb = addedToDbCount;
-        
-        console.log('[Sync] Завершена обработка записей только в таблице. Результат:', {
-            totalProcessed: processed,
-            addedToDb: addedToDbCount,
-            alreadyExists: alreadyExistsCount,
-            invalidTrackNumbersCount: invalidTrackNumbers.length,
-            invalidTrackNumbers: invalidTrackNumbers.slice(0, 10) // Show first 10 invalid track numbers
-        });
-    } catch (error) {
-        console.error('[Sync] Error processing sheet-only entries:', error);
-        throw error; // Re-throw to be caught by main function
+
+        if (opsCount > 0) await batch.commit();
+
+        const syncLockRef = db.collection('system').doc('sync-lock');
+        await syncLockRef.update({ active: false, lastSync: Timestamp.now() });
+
+        console.log('[Sync] Синхронизация завершена успешно за', (Date.now() - startTime) / 1000, 'сек');
+
+    } catch (e: any) {
+        console.error('[Sync] Ошибка:', e);
+        const { db } = getFirebaseAdmin();
+        await db.collection('system').doc('sync-lock').update({ active: false, error: e.message });
     }
 }

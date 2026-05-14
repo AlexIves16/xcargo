@@ -98,25 +98,31 @@ export default defineNuxtConfig({
   },
   modules: [],
   runtimeConfig: {
-    // Server-only config
-    telegramBotToken: '',
-    googleClientEmail: '',
-    googlePrivateKey: '',
-    spreadsheetId: '',
-    recaptchaSecretKey: '', /* NUXT_RECAPTCHA_SECRET_KEY */
+    // Server-only config (Private)
+    googleClientEmail: process.env.GOOGLE_CLIENT_EMAIL,
+    googlePrivateKey: process.env.GOOGLE_PRIVATE_KEY,
+    spreadsheetId: process.env.SPREADSHEET_ID,
+    firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
+    recaptchaSecretKey: process.env.RECAPTCHA_SECRET_KEY,
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+    telegramChatId: process.env.TELEGRAM_CHAT_ID,
+    
+    // SMTP for Alerts
+    smtpHost: process.env.SMTP_HOST,
+    smtpPort: process.env.SMTP_PORT,
+    smtpUser: process.env.SMTP_USER,
+    smtpPass: process.env.SMTP_PASS,
+    smtpFrom: process.env.SMTP_FROM,
 
     public: {
-      firebaseApiKey: '',
-      firebaseAuthDomain: '',
-      firebaseProjectId: '',
-      firebaseStorageBucket: '',
-      firebaseMessagingSenderId: '',
-      firebaseAppId: '',
-      firebaseMeasurementId: '',
-      telegramBotName: '',
-      spreadsheetId: '',
-      recaptchaSiteKey: '6LeA3SgsAAAAAONjIzFrYpzZBADfLB-OwtnP_xWB',
-      firebaseVapidKey: 'BO91snwciBEECru5uzrbeRLjlgWf878kyNdiU6xDSFB3a3AQ1CCsMCQp3Rod4-SGIUIORH6S8TOcTL6i054vdGI',
+      // Public config (Accessible on client)
+      firebaseApiKey: process.env.FIREBASE_API_KEY,
+      firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN,
+      firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
+      firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+      firebaseAppId: process.env.FIREBASE_APP_ID,
+      recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
     }
   },
 })
