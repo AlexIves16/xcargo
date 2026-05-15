@@ -95,9 +95,12 @@ import AdminContent from '../components/AdminContent.vue'
 
 const showSplash = ref(true)
 
-// Skip splash on auth link
-if (typeof window !== 'undefined' && window.location.pathname === '/auth/finish') {
-  showSplash.value = false
+// Skip splash on specific paths (Admin, Dashboard, Auth)
+if (typeof window !== 'undefined') {
+  const skipPaths = ['/auth/finish', '/admin', '/dashboard'];
+  if (skipPaths.includes(window.location.pathname)) {
+    showSplash.value = false
+  }
 }
 const globePositionX = ref(190)
 const currentView = ref('home')
