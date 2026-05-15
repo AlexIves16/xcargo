@@ -41,26 +41,21 @@ self.addEventListener('fetch', (event) => {
     
     // 1. Bypass SW for API calls and Admin panel to avoid auth/sync issues
     if (url.pathname.startsWith('/api') || url.pathname.startsWith('/admin') || url.host.includes('google')) {
-        // Let the browser handle these directly
-        return; 
+        return; // Let browser handle it
     }
 
     // 2. Handle navigations (HTML pages)
     if (event.request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request)
-                .catch((error) => {
-                    console.error(`[SW ${version}] Navigation fetch failed, falling back to cache:`, error);
-                    return caches.match('/');
-                })
+            fetch(event.request).catch(() => caches.match('/'))
         );
         return;
     }
 
-    // 3. Stale-while-revalidate for local assets
+    // 3. Static Assets & Local files
     if (url.origin === self.location.origin) {
         event.respondWith(
-            caches.match(event.request).then((response) => {
+            caches.match(event.request).then((cachedResponse) => {
                 const fetchPromise = fetch(event.request).then((networkResponse) => {
                     if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
                         const responseToCache = networkResponse.clone();
@@ -70,10 +65,11 @@ self.addEventListener('fetch', (event) => {
                     }
                     return networkResponse;
                 }).catch(() => {
-                    // Fail silently for assets, handled by the match result
+                    // Network failed
+                    return null;
                 });
                 
-                return response || fetchPromise;
+                return cachedResponse || fetchPromise || fetch(event.request);
             })
         );
     }

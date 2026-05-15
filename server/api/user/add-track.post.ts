@@ -64,6 +64,7 @@ export default defineEventHandler(async (event) => {
                 description: description || '',
                 userName: userName || 'Пользователь',
                 userEmail: userEmail || '',
+                userIds: [userId], // Grant permission
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now()
             });
@@ -71,15 +72,21 @@ export default defineEventHandler(async (event) => {
             const trackDoc = trackQuery.docs[0];
             const trackData = trackDoc.data();
             
+            const existingIds = trackData.userIds || [];
+            const updates: any = { updatedAt: Timestamp.now() };
+            
+            if (!existingIds.includes(userId)) {
+                updates.userIds = [...existingIds, userId];
+            }
+
             // Only update with user info if it's currently generic
             if (!trackData.userName || trackData.userName === 'Пользователь') {
-                await trackDoc.ref.update({
-                    userName: userName || 'Пользователь',
-                    userEmail: userEmail || '',
-                    description: trackData.description || description || '',
-                    updatedAt: Timestamp.now()
-                });
+                updates.userName = userName || 'Пользователь';
+                updates.userEmail = userEmail || '';
+                updates.description = trackData.description || description || '';
             }
+
+            await trackDoc.ref.update(updates);
         }
 
         return { success: true, message: 'Track added to your list' };

@@ -197,13 +197,14 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         for (const doc of userClaimsSnap.docs) {
             const data = doc.data();
             const num = data.number?.toUpperCase();
+            const uid = data.userId;
             if (num) {
-                // If multiple users have the same track, we'll store a list or just the first one for the Admin view
                 if (!userClaims.has(num)) {
                     userClaims.set(num, {
                         userName: data.userName,
                         userEmail: data.userEmail,
                         description: data.description,
+                        userIds: [uid],
                         count: 1
                     });
                 } else {
@@ -211,6 +212,9 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                     existing.count++;
                     if (!existing.userName.includes(data.userName)) {
                         existing.userName += `, ${data.userName}`;
+                    }
+                    if (!existing.userIds.includes(uid)) {
+                        existing.userIds.push(uid);
                     }
                 }
             }
@@ -241,12 +245,14 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 const targetDescription = userClaim?.description || sheetData.sheetDescription || '';
                 const targetUserName = userClaim ? (userClaim.count > 1 ? `[${userClaim.count}] ${userClaim.userName}` : userClaim.userName) : (sheetData.sheetUserName || '');
                 const targetUserEmail = userClaim?.userEmail || sheetData.sheetUserEmail || '';
+                const targetUserIds = userClaim?.userIds || [];
 
                 const hasChanged = sheetData.lastChinaStatus !== data.lastChinaStatus || 
                                  sheetData.lastSecondaryStatus !== data.lastSecondaryStatus ||
                                  targetDescription !== data.description ||
                                  targetUserName !== data.userName ||
-                                 targetUserEmail !== data.userEmail;
+                                 targetUserEmail !== data.userEmail ||
+                                 JSON.stringify(targetUserIds) !== JSON.stringify(data.userIds || []);
                 
                 if (hasChanged) {
                     batch.update(doc.ref, {
@@ -255,6 +261,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                         description: targetDescription,
                         userName: targetUserName,
                         userEmail: targetUserEmail,
+                        userIds: targetUserIds,
                         updatedAt: Timestamp.now()
                     });
                     opsCount++;
@@ -300,6 +307,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                     description: userClaim?.description || sheetData.sheetDescription || '',
                     userName: userClaim ? (userClaim.count > 1 ? `[${userClaim.count}] ${userClaim.userName}` : userClaim.userName) : (sheetData.sheetUserName || ''),
                     userEmail: userClaim?.userEmail || sheetData.sheetUserEmail || '',
+                    userIds: userClaim?.userIds || [],
                     status: 'pending',
                     createdAt: Timestamp.now(),
                     updatedAt: Timestamp.now()
