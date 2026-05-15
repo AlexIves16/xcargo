@@ -276,41 +276,59 @@ const userPhoto = computed(() => {
 const fetchData = () => {
     if (!currentUser.value) return 
     
-    // Avoid double fetch if already loading or already have data (optional, but good)
-    // But here we want to ensure we get data
-    
-    const q = query(
-      collection($db, 'tracks'),
+    // 1. Listen to user's personal claims
+    const userTracksQuery = query(
+      collection($db, 'user_tracks'),
       where('userId', '==', currentUser.value.uid),
-      orderBy('createdAt', 'desc')
+      orderBy('addedAt', 'desc')
     )
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      tracks.value = snapshot.docs.map(doc => ({
+    const unsubscribe = onSnapshot(userTracksQuery, async (userSnapshot) => {
+      const userClaims = userSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }))
-      
-      // Sync Stats to User Profile
-      if (currentUser.value) {
-          try {
-             const userRef = doc($db, 'users', currentUser.value.uid)
-             await updateDoc(userRef, {
-                 stats: {
-                     total: totalCount.value,
-                     transit: transitCount.value,
-                     received: receivedCount.value,
-                     updatedAt: serverTimestamp()
-                 }
-             })
-          } catch (e) {
-              console.error("Error syncing stats:", e)
-          }
+
+      if (userClaims.length === 0) {
+          tracks.value = []
+          loadingData.value = false
+          return
       }
 
-      loadingData.value = false
+      // 2. Fetch statuses from the main tracks collection for these numbers
+      const trackNumbers = userClaims.map(c => c.number)
+      
+      // Firestore 'in' query is limited to 30 items. 
+      // For simplicity, we'll listen to the main collection for these tracks.
+      // In a production app with 100+ tracks per user, we would chunk this.
+      const statusQuery = query(
+          collection($db, 'tracks'),
+          where('number', 'in', trackNumbers.slice(0, 30)) 
+      )
+
+      onSnapshot(statusQuery, (statusSnapshot) => {
+          const statusMap = new Map()
+          statusSnapshot.docs.forEach(doc => {
+              const data = doc.data()
+              statusMap.set(data.number.toUpperCase(), data)
+          })
+
+          // Merge user claim with official status
+          tracks.value = userClaims.map(claim => {
+              const official = statusMap.get(claim.number.toUpperCase())
+              return {
+                  ...claim,
+                  // Prioritize official status
+                  lastChinaStatus: official?.lastChinaStatus || '',
+                  lastSecondaryStatus: official?.lastSecondaryStatus || '',
+                  history: official?.history || [],
+                  createdAt: claim.addedAt // For sorting/display
+              }
+          })
+          loadingData.value = false
+      })
     }, (err) => {
-      console.error("Error fetching tracks:", err)
+      console.error("Error fetching user tracks:", err)
       error.value = "Ошибка загрузки данных."
       loadingData.value = false
     })
@@ -485,10 +503,8 @@ const addTrackNumber = async () => {
 const deleteTrack = async (id) => {
   if (!confirm(t('dashboard.confirm_delete'))) return
   try {
-    await updateDoc(doc($db, 'tracks', id), {
-        isDeleted: true,
-        deletedAt: serverTimestamp()
-    })
+    // Delete from user's personal list
+    await deleteDoc(doc($db, 'user_tracks', id))
   } catch (e) {
     console.error("Error deleting track:", e)
     alert(t('dashboard.error_delete') || 'Error')

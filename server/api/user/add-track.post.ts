@@ -28,73 +28,62 @@ export default defineEventHandler(async (event) => {
 
     try {
         const tracksRef = db.collection('tracks');
-        const trackNumUpper = trackNum.toUpperCase();
+        const userTracksRef = db.collection('user_tracks');
+        const trackNumNorm = trackNum.toUpperCase();
 
-        console.log(`[AddTrack] Searching for: '${trackNum}' (Upper: '${trackNumUpper}')`);
+        console.log(`[AddTrack] User ${userId} adding track: '${trackNumNorm}'`);
 
-        // 1. Try Exact Match
-        let q = tracksRef.where('number', '==', trackNum).limit(1);
-        let snapshot = await q.get();
+        // 1. Check if this user already added this track to their list
+        const existingClaim = await userTracksRef
+            .where('userId', '==', userId)
+            .where('number', '==', trackNumNorm)
+            .limit(1)
+            .get();
 
-        // 2. Fallback: Try Uppercase Match (if different)
-        if (snapshot.empty && trackNum !== trackNumUpper) {
-            console.log('[AddTrack] Exact match failed. Trying uppercase...');
-            q = tracksRef.where('number', '==', trackNumUpper).limit(1);
-            snapshot = await q.get();
+        if (!existingClaim.empty) {
+            return { success: true, message: 'Track already in your list', trackId: existingClaim.docs[0].id };
         }
 
-        if (!snapshot.empty) {
-            // Track exists! Claim it!
-            const doc = snapshot.docs[0];
-            const data = doc.data();
-            console.log(`[AddTrack] Found existing track: ${doc.id}`);
+        // 2. Add to user's personal list
+        await userTracksRef.add({
+            userId,
+            userEmail: userEmail || '',
+            userName: userName || 'Пользователь',
+            number: trackNumNorm,
+            description: description || '',
+            addedAt: Timestamp.now()
+        });
 
-            // Check if already claimed by SOMEONE ELSE
-            if (data.userId && data.userId !== userId) {
-                return { success: false, error: 'Трек-номер уже добавлен другим пользователем.' };
-            }
-
-            if (data.userId === userId) {
-                // Already yours, just return success
-                return { success: true, message: 'Track already added', trackId: doc.id };
-            }
-
-            // Claim it
-            await doc.ref.update({
-                userId: userId,
-                userEmail: userEmail || '',
-                userName: userName || 'Пользователь',
+        // 3. Ensure the track exists in the main 'tracks' table (admin view)
+        const trackQuery = await tracksRef.where('number', '==', trackNumNorm).limit(1).get();
+        
+        if (trackQuery.empty) {
+            await tracksRef.add({
+                number: trackNumNorm,
+                status: 'pending',
                 description: description || '',
+                userName: userName || 'Пользователь',
+                userEmail: userEmail || '',
+                createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now()
             });
-
-            return { success: true, message: 'Track claimed', trackId: doc.id };
-
         } else {
-            console.log('[AddTrack] Not found. Creating new...');
-            // Track does not exist. Create new.
-            // Always save as trim() raw? Or normalize to Upper? 
-            // Better to save as Upper to keep consistency if that's the standard.
-            // But let's respect user input usually, unless we enforce upper.
-            // Let's us Upper for the new track number for consistency if we couldn't find it.
-            // Actually, if we save as Upper, future syncs must also use Upper. 
-            // Sheets sync uses raw string from sheet. 
-            // Let's stick to trackNum (trimmed input) to avoid mismatch with Sheet if Sheet has lowercase.
-
-            const newDoc = await tracksRef.add({
-                number: trackNum, // or trackNumUpper?
-                description: description || '',
-                userId: userId,
-                userEmail: userEmail || '',
-                userName: userName || 'Пользователь',
-                status: 'pending',
-                createdAt: Timestamp.now(),
-                updatedAt: Timestamp.now(),
-                history: []
-            });
-
-            return { success: true, message: 'Track created', trackId: newDoc.id };
+            const trackDoc = trackQuery.docs[0];
+            const trackData = trackDoc.data();
+            
+            // Only update with user info if it's currently generic
+            if (!trackData.userName || trackData.userName === 'Пользователь') {
+                await trackDoc.ref.update({
+                    userName: userName || 'Пользователь',
+                    userEmail: userEmail || '',
+                    description: trackData.description || description || '',
+                    updatedAt: Timestamp.now()
+                });
+            }
         }
+
+        return { success: true, message: 'Track added to your list' };
+
     } catch (e: any) {
         console.error('Add Track Error:', e);
         return { success: false, error: e.message };

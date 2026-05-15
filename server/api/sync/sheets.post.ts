@@ -172,86 +172,134 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             await syncLog('Лист очищен от архивных записей');
         }
 
-        // Build sheet data map
+        // Build sheet data map (Normalized keys)
         const sheetRows = new Map();
         for (let i = 1; i < activeRows.length; i++) {
             const row = activeRows[i];
-            const trackNum = row[0]?.toString().trim();
+            const trackNum = row[0]?.toString().trim().toUpperCase();
             if (trackNum) {
                 sheetRows.set(trackNum, { 
-                    description: row[1] || '',
-                    lastChinaStatus: row[2] || '',
-                    lastSecondaryStatus: row[3] || '',
-                    userName: row[5] || '',
-                    userEmail: row[6] || ''
+                    lastChinaStatus: row[1] || '',
+                    lastSecondaryStatus: row[2] || '',
+                    // We assume columns D, E, F, G might have other data but we prioritize user data for Admin view
+                    sheetDescription: row[3] || '',
+                    sheetUserName: row[5] || '',
+                    sheetUserEmail: row[6] || ''
                 });
             }
         }
 
         await syncLog(`Начинаем синхронизацию базы (${sheetRows.size} треков)...`);
         
-        // Fetch existing tracks with the correct fields
-        const allTracksSnapshot = await db.collection('tracks').select('number', 'description', 'lastChinaStatus', 'lastSecondaryStatus', 'userName', 'userEmail').get();
+        // 1. Fetch ALL user claims to enrich the main table
+        const userClaimsSnap = await db.collection('user_tracks').get();
+        const userClaims = new Map();
+        for (const doc of userClaimsSnap.docs) {
+            const data = doc.data();
+            const num = data.number?.toUpperCase();
+            if (num) {
+                // If multiple users have the same track, we'll store a list or just the first one for the Admin view
+                if (!userClaims.has(num)) {
+                    userClaims.set(num, {
+                        userName: data.userName,
+                        userEmail: data.userEmail,
+                        description: data.description,
+                        count: 1
+                    });
+                } else {
+                    const existing = userClaims.get(num);
+                    existing.count++;
+                    if (!existing.userName.includes(data.userName)) {
+                        existing.userName += `, ${data.userName}`;
+                    }
+                }
+            }
+        }
+        await syncLog(`Загружено ${userClaims.size} уникальных пользовательских заявок.`);
+
+        // 2. Process main tracks collection
+        const allTracksSnapshot = await db.collection('tracks').get();
         const existingTrackNumbers = new Set();
         let batch = db.batch();
         let opsCount = 0;
         let totalProcessed = 0;
 
-        await syncLog(`Загружено ${allTracksSnapshot.size} записей из БД. Сравнение...`);
+        await syncLog(`Сравнение с ${allTracksSnapshot.size} записями в БД...`);
 
         for (const doc of allTracksSnapshot.docs) {
             const data = doc.data();
-            const trackNum = data.number;
+            const trackNum = data.number?.toUpperCase();
+            if (!trackNum) continue;
+            
             existingTrackNumbers.add(trackNum);
+            const userClaim = userClaims.get(trackNum);
 
             if (sheetRows.has(trackNum)) {
                 const sheetData = sheetRows.get(trackNum);
-                const hasChanged = sheetData.description !== data.description || 
-                                 sheetData.lastChinaStatus !== data.lastChinaStatus || 
+                
+                // Determine what the Admin should see
+                const targetDescription = userClaim?.description || sheetData.sheetDescription || '';
+                const targetUserName = userClaim ? (userClaim.count > 1 ? `[${userClaim.count}] ${userClaim.userName}` : userClaim.userName) : (sheetData.sheetUserName || '');
+                const targetUserEmail = userClaim?.userEmail || sheetData.sheetUserEmail || '';
+
+                const hasChanged = sheetData.lastChinaStatus !== data.lastChinaStatus || 
                                  sheetData.lastSecondaryStatus !== data.lastSecondaryStatus ||
-                                 sheetData.userName !== data.userName ||
-                                 sheetData.userEmail !== data.userEmail;
+                                 targetDescription !== data.description ||
+                                 targetUserName !== data.userName ||
+                                 targetUserEmail !== data.userEmail;
                 
                 if (hasChanged) {
                     batch.update(doc.ref, {
-                        description: sheetData.description,
                         lastChinaStatus: sheetData.lastChinaStatus,
                         lastSecondaryStatus: sheetData.lastSecondaryStatus,
-                        userName: sheetData.userName,
-                        userEmail: sheetData.userEmail,
+                        description: targetDescription,
+                        userName: targetUserName,
+                        userEmail: targetUserEmail,
                         updatedAt: Timestamp.now()
                     });
                     opsCount++;
                 }
             } else {
-                // Delete tracks no longer in active sheet
-                batch.delete(doc.ref);
-                opsCount++;
+                // Not in active sheet. 
+                // SAFETY: If it's claimed by a user, we KEEP it in 'tracks' so the user can still see their status.
+                // UNLESS it's older than 60 days (as per user request)
+                if (userClaim) {
+                    const addedAt = data.createdAt?.toDate() || new Date();
+                    const ageDays = (Date.now() - addedAt.getTime()) / (1000 * 60 * 60 * 24);
+                    
+                    if (ageDays > 60) {
+                        await syncLog(`Удаление старого пользовательского трека: ${trackNum} (${Math.round(ageDays)} дн.)`);
+                        batch.delete(doc.ref);
+                        opsCount++;
+                    }
+                } else {
+                    // Not in sheet AND no user claims -> Delete (it's likely archived or removed)
+                    batch.delete(doc.ref);
+                    opsCount++;
+                }
             }
 
             totalProcessed++;
-            if (totalProcessed % 2000 === 0) {
-                await syncLog(`Проверено ${totalProcessed} записей...`);
-            }
-
-            if (opsCount >= 400) {
+            if (opsCount >= 450) {
                 await batch.commit();
                 batch = db.batch();
                 opsCount = 0;
             }
         }
 
-        // Add new tracks
+        // 3. Add new tracks from sheet
         let newCount = 0;
         for (const [trackNum, sheetData] of sheetRows.entries()) {
             if (!existingTrackNumbers.has(trackNum)) {
+                const userClaim = userClaims.get(trackNum);
+                
                 batch.set(db.collection('tracks').doc(), {
                     number: trackNum,
-                    description: sheetData.description,
                     lastChinaStatus: sheetData.lastChinaStatus,
                     lastSecondaryStatus: sheetData.lastSecondaryStatus,
-                    userName: sheetData.userName,
-                    userEmail: sheetData.userEmail,
+                    description: userClaim?.description || sheetData.sheetDescription || '',
+                    userName: userClaim ? (userClaim.count > 1 ? `[${userClaim.count}] ${userClaim.userName}` : userClaim.userName) : (sheetData.sheetUserName || ''),
+                    userEmail: userClaim?.userEmail || sheetData.sheetUserEmail || '',
                     status: 'pending',
                     createdAt: Timestamp.now(),
                     updatedAt: Timestamp.now()
@@ -259,7 +307,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 opsCount++;
                 newCount++;
             }
-            if (opsCount >= 400) {
+            if (opsCount >= 450) {
                 await batch.commit();
                 batch = db.batch();
                 opsCount = 0;
