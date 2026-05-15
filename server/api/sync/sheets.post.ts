@@ -107,7 +107,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         const firstSheetTitle = meta.data.sheets?.[0]?.properties?.title;
 
         await syncLog('Читаем Google Sheets...');
-        const rangeName = `${firstSheetTitle}!A:E`;
+        const rangeName = `${firstSheetTitle}!A:G`;
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
             range: rangeName,
@@ -129,14 +129,15 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
         await syncLog(`Анализ ${dataRows.length} строк таблицы...`);
         for (const row of dataRows) {
-            const status = (row[0] || '') + (row[1] || '') + (row[2] || ''); // Ищем дату в первых трех колонках для надежности
-            const isDelivered = status.toLowerCase().includes('дата получ') || 
-                               status.toLowerCase().includes('получено') ||
-                               status.toLowerCase().includes('delivered') ||
-                               status.toLowerCase().includes('выдан');
+            // Ищем дату во всех колонках статуса и описания для надежности
+            const statusContent = (row[1] || '') + (row[2] || '') + (row[3] || ''); 
+            const isDelivered = statusContent.toLowerCase().includes('дата получ') || 
+                               statusContent.toLowerCase().includes('получено') ||
+                               statusContent.toLowerCase().includes('delivered') ||
+                               statusContent.toLowerCase().includes('выдан');
             
             if (isDelivered) {
-                const deliveryDate = parseDateFromStatus(status);
+                const deliveryDate = parseDateFromStatus(statusContent);
                 if (deliveryDate && deliveryDate < threshold) {
                     archiveRows.push(row);
                     continue;
@@ -153,7 +154,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             for (let i = 0; i < archiveRows.length; i += 500) {
                 await sheets.spreadsheets.values.append({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Архив!A:E',
+                    range: 'Архив!A:G',
                     valueInputOption: 'RAW',
                     requestBody: { values: archiveRows.slice(i, i + 500) },
                     auth: authClient as any
@@ -178,19 +179,19 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             const trackNum = row[0]?.toString().trim();
             if (trackNum) {
                 sheetRows.set(trackNum, { 
-                    status: row[1] || '', 
-                    date: row[2] || '',
-                    info: row[3] || '', 
-                    additional: row[4] || '' 
+                    description: row[1] || '',
+                    lastChinaStatus: row[2] || '',
+                    lastSecondaryStatus: row[3] || '',
+                    userName: row[5] || '',
+                    userEmail: row[6] || ''
                 });
             }
         }
 
         await syncLog(`Начинаем синхронизацию базы (${sheetRows.size} треков)...`);
         
-        // OPTIMIZATION: Get only necessary fields and stream or process in chunks
-        // For 37k records, we'll use a snapshot with select to reduce payload
-        const allTracksSnapshot = await db.collection('tracks').select('number', 'status', 'info', 'additional').get();
+        // Fetch existing tracks with the correct fields
+        const allTracksSnapshot = await db.collection('tracks').select('number', 'description', 'lastChinaStatus', 'lastSecondaryStatus', 'userName', 'userEmail').get();
         const existingTrackNumbers = new Set();
         let batch = db.batch();
         let opsCount = 0;
@@ -205,21 +206,25 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
             if (sheetRows.has(trackNum)) {
                 const sheetData = sheetRows.get(trackNum);
-                const hasChanged = sheetData.status !== data.status || 
-                                 sheetData.info !== data.info || 
-                                 sheetData.additional !== data.additional;
+                const hasChanged = sheetData.description !== data.description || 
+                                 sheetData.lastChinaStatus !== data.lastChinaStatus || 
+                                 sheetData.lastSecondaryStatus !== data.lastSecondaryStatus ||
+                                 sheetData.userName !== data.userName ||
+                                 sheetData.userEmail !== data.userEmail;
                 
                 if (hasChanged) {
                     batch.update(doc.ref, {
-                        status: sheetData.status,
-                        info: sheetData.info,
-                        additional: sheetData.additional,
+                        description: sheetData.description,
+                        lastChinaStatus: sheetData.lastChinaStatus,
+                        lastSecondaryStatus: sheetData.lastSecondaryStatus,
+                        userName: sheetData.userName,
+                        userEmail: sheetData.userEmail,
                         updatedAt: Timestamp.now()
                     });
                     opsCount++;
                 }
             } else {
-                // Delete tracks no longer in active sheet (archived or manually removed)
+                // Delete tracks no longer in active sheet
                 batch.delete(doc.ref);
                 opsCount++;
             }
@@ -242,9 +247,12 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             if (!existingTrackNumbers.has(trackNum)) {
                 batch.set(db.collection('tracks').doc(), {
                     number: trackNum,
-                    status: sheetData.status,
-                    info: sheetData.info,
-                    additional: sheetData.additional,
+                    description: sheetData.description,
+                    lastChinaStatus: sheetData.lastChinaStatus,
+                    lastSecondaryStatus: sheetData.lastSecondaryStatus,
+                    userName: sheetData.userName,
+                    userEmail: sheetData.userEmail,
+                    status: 'pending',
                     createdAt: Timestamp.now(),
                     updatedAt: Timestamp.now()
                 });
