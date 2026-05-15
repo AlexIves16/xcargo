@@ -172,24 +172,41 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             await syncLog('Лист очищен от архивных записей');
         }
 
-        // Build sheet data map (Normalized keys)
+        // Build sheet data map (Normalized keys) with audit
         const sheetRows = new Map();
+        let emptyRows = 0;
+        let duplicateRows = 0;
+        const duplicatesList: string[] = [];
+
         for (let i = 1; i < activeRows.length; i++) {
             const row = activeRows[i];
             const trackNum = row[0]?.toString().trim().toUpperCase();
-            if (trackNum) {
-                sheetRows.set(trackNum, { 
-                    lastChinaStatus: row[1] || '',
-                    lastSecondaryStatus: row[2] || '',
-                    // We assume columns D, E, F, G might have other data but we prioritize user data for Admin view
-                    sheetDescription: row[3] || '',
-                    sheetUserName: row[5] || '',
-                    sheetUserEmail: row[6] || ''
-                });
+            
+            if (!trackNum) {
+                emptyRows++;
+                continue;
             }
+
+            if (sheetRows.has(trackNum)) {
+                duplicateRows++;
+                if (duplicatesList.length < 5) duplicatesList.push(trackNum);
+                continue;
+            }
+
+            sheetRows.set(trackNum, { 
+                lastChinaStatus: row[1] || '',
+                lastSecondaryStatus: row[2] || '',
+                // We assume columns D, E, F, G might have other data but we prioritize user data for Admin view
+                sheetDescription: row[3] || '',
+                sheetUserName: row[5] || '',
+                sheetUserEmail: row[6] || ''
+            });
         }
 
-        await syncLog(`Начинаем синхронизацию базы (${sheetRows.size} треков)...`);
+        if (emptyRows > 0) await syncLog(`⚠️ Пропущено пустых строк: ${emptyRows}`);
+        if (duplicateRows > 0) await syncLog(`⚠️ Найдено дубликатов в таблице: ${duplicateRows} (напр: ${duplicatesList.join(', ')})`);
+        
+        await syncLog(`Итого уникальных треков в таблице: ${sheetRows.size}`);
         
         // 1. Fetch ALL user claims to enrich the main table
         const userClaimsSnap = await db.collection('user_tracks').get();

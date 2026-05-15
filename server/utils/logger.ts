@@ -2,7 +2,12 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { getFirebaseAdmin } from './firebase';
 
 export const syncLog = async (message: string, isError = false) => {
-    const timestamp = new Date().toLocaleTimeString();
+    // Force UTC+5 for local time display
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const localTime = new Date(utcTime + (3600000 * 5)); 
+    const timestamp = localTime.toLocaleTimeString('ru-RU');
+    
     const fullMessage = `[${timestamp}] ${message}`;
     
     // 1. Log to server console
