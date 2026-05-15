@@ -39,24 +39,32 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     
-    // 1. Bypass SW for API calls and Admin panel to avoid auth/sync issues
+    // 1. Bypass SW for API calls and Admin panel
     if (url.pathname.startsWith('/api') || url.pathname.startsWith('/admin') || url.host.includes('google')) {
-        return; // Let browser handle it
+        return; 
     }
 
-    // 2. Handle navigations (HTML pages)
+    // 2. Handle navigations
     if (event.request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request).catch(() => caches.match('/'))
+            fetch(event.request).catch(() => {
+                return caches.match('/').then(response => {
+                    return response || new Response('Offline - cache missing', {
+                        status: 503,
+                        statusText: 'Service Unavailable',
+                        headers: new Headers({ 'Content-Type': 'text/plain' })
+                    });
+                });
+            })
         );
         return;
     }
 
-    // 3. Static Assets & Local files
+    // 3. Static Assets (Stale-while-revalidate)
     if (url.origin === self.location.origin) {
         event.respondWith(
             caches.match(event.request).then((cachedResponse) => {
-                const fetchPromise = fetch(event.request).then((networkResponse) => {
+                const networkFetch = fetch(event.request).then((networkResponse) => {
                     if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
                         const responseToCache = networkResponse.clone();
                         caches.open(CACHE_NAME).then((cache) => {
@@ -65,11 +73,15 @@ self.addEventListener('fetch', (event) => {
                     }
                     return networkResponse;
                 }).catch(() => {
-                    // Network failed
+                    // Fail silently for background sync
                     return null;
                 });
                 
-                return cachedResponse || fetchPromise || fetch(event.request);
+                // Return cached if available, otherwise wait for network
+                return cachedResponse || networkFetch || fetch(event.request);
+            }).catch(() => {
+                // Final fallback to avoid TypeError
+                return new Response('Asset not found', { status: 404 });
             })
         );
     }
