@@ -427,7 +427,7 @@ const loadTracks = (cursor = null) => {
     // NOTE: Real-time pagination is complex. For this use case, we will listen to the most recent items.
     // If search is active, listen to search results.
     if (searchQuery.value) {
-        q = query(coll, where('number', '==', searchQuery.value.trim()));
+        q = query(coll, where('number', '==', searchQuery.value.trim().toUpperCase()));
     } else {
         // Listen to last 'pageSize' items
         q = query(coll, orderBy('createdAt', 'desc'), limit(pageSize.value));
@@ -768,7 +768,8 @@ const handleUpload = async (event, targetStatus) => {
          const trackNum = validateTrackNumber(row[0]?.toString().trim()); // Validate track number
          if(!trackNum) continue;
          
-         const q = query(collection($db, 'tracks'), where('number', '==', trackNum));
+         const trackNumNorm = trackNum.toUpperCase();
+         const q = query(collection($db, 'tracks'), where('number', '==', trackNumNorm));
          const snap = await getDocs(q);
          
          if (!snap.empty) {
@@ -777,7 +778,7 @@ const handleUpload = async (event, targetStatus) => {
               updatedCount++;
          } else {
               await addDoc(collection($db, 'tracks'), {
-                  number: trackNum,
+                  number: trackNumNorm,
                   status: targetStatus,
                   createdAt: serverTimestamp()
               });

@@ -15,6 +15,9 @@ declare module "nitropack/types" {
     '/api/admin/clear-old-delivered': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/clear-old-delivered.post').default>>>>
     }
+    '/api/admin/clear-old-received': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/clear-old-received.post').default>>>>
+    }
     '/api/admin/stats': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/admin/stats.get').default>>>>
     }
@@ -33,6 +36,9 @@ declare module "nitropack/types" {
     '/api/auth/telegram': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/auth/telegram.post').default>>>>
     }
+    '/api/debug/reset-sync-lock': {
+      'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/debug/reset-sync-lock.post').default>>>>
+    }
     '/api/debug/set-webhook': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/debug/set-webhook.get').default>>>>
     }
@@ -44,6 +50,9 @@ declare module "nitropack/types" {
     }
     '/api/health': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/health.get').default>>>>
+    }
+    '/api/sync/logs': {
+      'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/sync/logs.get').default>>>>
     }
     '/api/sync/sheets': {
       'post': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/sync/sheets.post').default>>>>
@@ -65,6 +74,9 @@ declare module "nitropack/types" {
     }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/@nuxt/nitro-server/dist/runtime/handlers/renderer').default>>>>
+    }
+    '/_scripts/p/**': {
+      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/@nuxt/scripts/dist/runtime/server/proxy-handler').default>>>>
     }
     '/__nuxt_island/**': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/#internal/nuxt/island-renderer').default>>>>

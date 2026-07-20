@@ -1,9 +1,9 @@
 {
-  "_hash": "irgLrc8o6JTHaFEWCHsVV5Owv5zRwLzPcskPhFmNqiI",
+  "_hash": "JNpVWeavvH7UzMUvUV8Ek6V6Q5cVge5oGcO7hd8FGFE",
   "project": {
-    "rootDir": "D:/CodeProjects/xcargo26/xcargo"
+    "rootDir": "C:/Users/ormix/StudioProjects/XCargo"
   },
   "versions": {
-    "nuxt": "3.20.2"
+    "nuxt": "3.21.5"
   }
 }

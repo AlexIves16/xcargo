@@ -29,27 +29,6 @@
       "@@/*": [
         "../*"
       ],
-      "nitropack/types": [
-        "../node_modules/nitropack/types"
-      ],
-      "nitropack/runtime": [
-        "../node_modules/nitropack/runtime"
-      ],
-      "nitropack": [
-        "../node_modules/nitropack"
-      ],
-      "defu": [
-        "../node_modules/defu"
-      ],
-      "h3": [
-        "../node_modules/h3"
-      ],
-      "consola": [
-        "../node_modules/consola"
-      ],
-      "ofetch": [
-        "../node_modules/ofetch"
-      ],
       "@unhead/vue": [
         "../node_modules/@unhead/vue"
       ],
@@ -74,6 +53,33 @@
       "vite/client": [
         "../node_modules/vite/client"
       ],
+      "nitropack/types": [
+        "../node_modules/nitropack/types"
+      ],
+      "nitropack/runtime": [
+        "../node_modules/nitropack/runtime"
+      ],
+      "nitropack": [
+        "../node_modules/nitropack"
+      ],
+      "defu": [
+        "../node_modules/defu"
+      ],
+      "h3": [
+        "../node_modules/h3"
+      ],
+      "consola": [
+        "../node_modules/consola"
+      ],
+      "ofetch": [
+        "../node_modules/ofetch"
+      ],
+      "crossws": [
+        "../node_modules/crossws"
+      ],
+      "@types/cloudflare-turnstile": [
+        "../node_modules/@types/cloudflare-turnstile"
+      ],
       "#shared": [
         "../shared"
       ],
@@ -92,6 +98,12 @@
       "public/*": [
         "../public/*"
       ],
+      "#server": [
+        "../server"
+      ],
+      "#server/*": [
+        "../server/*"
+      ],
       "#build": [
         "./"
       ],
@@ -101,6 +113,12 @@
       "#internal/nuxt/paths": [
         "../node_modules/@nuxt/nitro-server/dist/runtime/utils/paths"
       ],
+      "#nuxt-scripts": [
+        "../node_modules/@nuxt/scripts/dist/runtime"
+      ],
+      "#nuxt-scripts/*": [
+        "../node_modules/@nuxt/scripts/dist/runtime/*"
+      ],
       "#unhead/composables": [
         "../node_modules/nuxt/dist/head/runtime/composables/v3"
       ]
@@ -109,7 +127,9 @@
       "esnext",
       "webworker",
       "dom.iterable"
-    ]
+    ],
+    "noUncheckedIndexedAccess": true,
+    "allowArbitraryExtensions": true
   },
   "include": [
     "./types/nitro-nuxt.d.ts",
@@ -123,6 +143,8 @@
   "exclude": [
     "../node_modules",
     "../node_modules/nuxt/node_modules",
+    "../node_modules/@nuxt/scripts/node_modules",
+    "../node_modules/@nuxtjs/turnstile/node_modules",
     "../node_modules/@nuxt/devtools/node_modules",
     "../node_modules/@nuxt/telemetry/node_modules",
     "../dist"

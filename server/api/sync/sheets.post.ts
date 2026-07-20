@@ -125,7 +125,7 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         const dataRows = rows.slice(1);
         const activeRows = [header];
         const archiveRows = [];
-        const threshold = new Date(Date.now() - (14 * 24 * 60 * 60 * 1000));
+        const threshold = new Date(Date.now() - (28 * 24 * 60 * 60 * 1000)); // 4 недели
 
         await syncLog(`Анализ ${dataRows.length} строк таблицы...`);
         for (const row of dataRows) {
@@ -244,12 +244,16 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         let batch = db.batch();
         let opsCount = 0;
         let totalProcessed = 0;
+        let updatedCount = 0;
+        let skippedUnchanged = 0;
+        let notInSheetCount = 0;
 
         await syncLog(`Сравнение с ${allTracksSnapshot.size} записями в БД...`);
 
         for (const doc of allTracksSnapshot.docs) {
             const data = doc.data();
-            const trackNum = data.number?.toUpperCase();
+            const trackNumRaw = data.number;
+            const trackNum = trackNumRaw?.toUpperCase();
             if (!trackNum) continue;
             
             existingTrackNumbers.add(trackNum);
@@ -264,14 +268,19 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 const targetUserEmail = userClaim?.userEmail || sheetData.sheetUserEmail || '';
                 const targetUserIds = userClaim?.userIds || [];
 
-                const hasChanged = sheetData.lastChinaStatus !== data.lastChinaStatus || 
-                                 sheetData.lastSecondaryStatus !== data.lastSecondaryStatus ||
+                const chinaChanged = sheetData.lastChinaStatus !== data.lastChinaStatus;
+                const secondaryChanged = sheetData.lastSecondaryStatus !== data.lastSecondaryStatus;
+
+                const hasChanged = chinaChanged || secondaryChanged ||
                                  targetDescription !== data.description ||
                                  targetUserName !== data.userName ||
                                  targetUserEmail !== data.userEmail ||
                                  JSON.stringify(targetUserIds) !== JSON.stringify(data.userIds || []);
                 
                 if (hasChanged) {
+                    if (chinaChanged || secondaryChanged) {
+                        await syncLog(`🔄 Обновление статусов [${trackNum}]: China: "${data.lastChinaStatus}" → "${sheetData.lastChinaStatus}" | Secondary: "${data.lastSecondaryStatus}" → "${sheetData.lastSecondaryStatus}"`);
+                    }
                     batch.update(doc.ref, {
                         lastChinaStatus: sheetData.lastChinaStatus,
                         lastSecondaryStatus: sheetData.lastSecondaryStatus,
@@ -282,11 +291,15 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                         updatedAt: Timestamp.now()
                     });
                     opsCount++;
+                    updatedCount++;
+                } else {
+                    skippedUnchanged++;
                 }
             } else {
                 // Not in active sheet. 
                 // SAFETY: If it's claimed by a user, we KEEP it in 'tracks' so the user can still see their status.
                 // UNLESS it's older than 60 days (as per user request)
+                notInSheetCount++;
                 if (userClaim) {
                     const addedAt = data.createdAt?.toDate() || new Date();
                     const ageDays = (Date.now() - addedAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -310,6 +323,8 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 opsCount = 0;
             }
         }
+
+        await syncLog(`📊 Итог обновления: изменено ${updatedCount}, без изменений ${skippedUnchanged}, не найдено в таблице ${notInSheetCount}`);
 
         // 3. Add new tracks from sheet
         let newCount = 0;

@@ -1,4 +1,6 @@
 declare global {
+  const H3Error: typeof import('../../node_modules/h3').H3Error
+  const H3Event: typeof import('../../node_modules/h3').H3Event
   const __buildAssetsURL: typeof import('../../node_modules/@nuxt/nitro-server/dist/runtime/utils/paths').buildAssetsURL
   const __publicAssetsURL: typeof import('../../node_modules/@nuxt/nitro-server/dist/runtime/utils/paths').publicAssetsURL
   const appendCorsHeaders: typeof import('../../node_modules/h3').appendCorsHeaders
@@ -115,6 +117,7 @@ declare global {
   const setResponseHeaders: typeof import('../../node_modules/h3').setResponseHeaders
   const setResponseStatus: typeof import('../../node_modules/h3').setResponseStatus
   const splitCookiesString: typeof import('../../node_modules/h3').splitCookiesString
+  const syncLog: typeof import('../../server/utils/logger').syncLog
   const toEventHandler: typeof import('../../node_modules/h3').toEventHandler
   const toNodeListener: typeof import('../../node_modules/h3').toNodeListener
   const toPlainHandler: typeof import('../../node_modules/h3').toPlainHandler
@@ -129,8 +132,17 @@ declare global {
   const useRuntimeConfig: typeof import('../../node_modules/nitropack/dist/runtime/internal/config').useRuntimeConfig
   const useSession: typeof import('../../node_modules/h3').useSession
   const useStorage: typeof import('../../node_modules/nitropack/dist/runtime/internal/storage').useStorage
+  const verifyTurnstileToken: typeof import('../../node_modules/@nuxtjs/turnstile/dist/runtime/server/utils/verify').verifyTurnstileToken
   const writeEarlyHints: typeof import('../../node_modules/h3').writeEarlyHints
 }
+// for type re-export
+declare global {
+  // @ts-ignore
+  export type { EventHandler, EventHandlerRequest, EventHandlerResponse, EventHandlerObject, H3EventContext } from '../../node_modules/h3'
+  import('../../node_modules/h3')
+}
+export { H3Event, H3Error, appendCorsHeaders, appendCorsPreflightHeaders, appendHeader, appendHeaders, appendResponseHeader, appendResponseHeaders, assertMethod, callNodeListener, clearResponseHeaders, clearSession, createApp, createAppEventHandler, createError, createEvent, createEventStream, createRouter, defaultContentType, defineEventHandler, defineLazyEventHandler, defineNodeListener, defineNodeMiddleware, defineRequestMiddleware, defineResponseMiddleware, defineWebSocket, defineWebSocketHandler, deleteCookie, dynamicEventHandler, eventHandler, fetchWithEvent, fromNodeMiddleware, fromPlainHandler, fromWebHandler, getCookie, getHeader, getHeaders, getMethod, getProxyRequestHeaders, getQuery, getRequestFingerprint, getRequestHeader, getRequestHeaders, getRequestHost, getRequestIP, getRequestPath, getRequestProtocol, getRequestURL, getRequestWebStream, getResponseHeader, getResponseHeaders, getResponseStatus, getResponseStatusText, getRouterParam, getRouterParams, getSession, getValidatedQuery, getValidatedRouterParams, handleCacheHeaders, handleCors, isCorsOriginAllowed, isError, isEvent, isEventHandler, isMethod, isPreflightRequest, isStream, isWebResponse, lazyEventHandler, parseCookies, promisifyNodeListener, proxyRequest, readBody, readFormData, readMultipartFormData, readRawBody, readValidatedBody, removeResponseHeader, sanitizeStatusCode, sanitizeStatusMessage, sealSession, send, sendError, sendIterable, sendNoContent, sendProxy, sendRedirect, sendStream, sendWebResponse, serveStatic, setCookie, setHeader, setHeaders, setResponseHeader, setResponseHeaders, setResponseStatus, splitCookiesString, toEventHandler, toNodeListener, toPlainHandler, toWebHandler, toWebRequest, unsealSession, updateSession, useBase, useSession, writeEarlyHints } from 'h3';
+export { verifyTurnstileToken } from 'C:/Users/ormix/StudioProjects/XCargo/node_modules/@nuxtjs/turnstile/dist/runtime/server/utils/verify';
 export { useNitroApp } from 'nitropack/runtime/internal/app';
 export { useRuntimeConfig, useAppConfig } from 'nitropack/runtime/internal/config';
 export { defineNitroPlugin, nitroPlugin } from 'nitropack/runtime/internal/plugin';
@@ -142,11 +154,11 @@ export { getRouteRules } from 'nitropack/runtime/internal/route-rules';
 export { useEvent } from 'nitropack/runtime/internal/context';
 export { defineTask, runTask } from 'nitropack/runtime/internal/task';
 export { defineNitroErrorHandler } from 'nitropack/runtime/internal/error/utils';
-export { appendCorsHeaders, appendCorsPreflightHeaders, appendHeader, appendHeaders, appendResponseHeader, appendResponseHeaders, assertMethod, callNodeListener, clearResponseHeaders, clearSession, createApp, createAppEventHandler, createError, createEvent, createEventStream, createRouter, defaultContentType, defineEventHandler, defineLazyEventHandler, defineNodeListener, defineNodeMiddleware, defineRequestMiddleware, defineResponseMiddleware, defineWebSocket, defineWebSocketHandler, deleteCookie, dynamicEventHandler, eventHandler, fetchWithEvent, fromNodeMiddleware, fromPlainHandler, fromWebHandler, getCookie, getHeader, getHeaders, getMethod, getProxyRequestHeaders, getQuery, getRequestFingerprint, getRequestHeader, getRequestHeaders, getRequestHost, getRequestIP, getRequestPath, getRequestProtocol, getRequestURL, getRequestWebStream, getResponseHeader, getResponseHeaders, getResponseStatus, getResponseStatusText, getRouterParam, getRouterParams, getSession, getValidatedQuery, getValidatedRouterParams, handleCacheHeaders, handleCors, isCorsOriginAllowed, isError, isEvent, isEventHandler, isMethod, isPreflightRequest, isStream, isWebResponse, lazyEventHandler, parseCookies, promisifyNodeListener, proxyRequest, readBody, readFormData, readMultipartFormData, readRawBody, readValidatedBody, removeResponseHeader, sanitizeStatusCode, sanitizeStatusMessage, sealSession, send, sendError, sendIterable, sendNoContent, sendProxy, sendRedirect, sendStream, sendWebResponse, serveStatic, setCookie, setHeader, setHeaders, setResponseHeader, setResponseHeaders, setResponseStatus, splitCookiesString, toEventHandler, toNodeListener, toPlainHandler, toWebHandler, toWebRequest, unsealSession, updateSession, useBase, useSession, writeEarlyHints } from 'h3';
-export { buildAssetsURL as __buildAssetsURL, publicAssetsURL as __publicAssetsURL } from 'D:/CodeProjects/xcargo26/xcargo/node_modules/@nuxt/nitro-server/dist/runtime/utils/paths';
-export { defineAppConfig } from 'D:/CodeProjects/xcargo26/xcargo/node_modules/@nuxt/nitro-server/dist/runtime/utils/config';
-export { sendAlertEmail } from 'D:/CodeProjects/xcargo26/xcargo/server/utils/email';
-export { getFirebaseAdmin } from 'D:/CodeProjects/xcargo26/xcargo/server/utils/firebase';
-export { getGoogleAuth, getGoogleSheetsClient } from 'D:/CodeProjects/xcargo26/xcargo/server/utils/google';
-export { getSystemStats } from 'D:/CodeProjects/xcargo26/xcargo/server/utils/stats';
-export { pendingTokens } from 'D:/CodeProjects/xcargo26/xcargo/server/utils/token-store';
+export { buildAssetsURL as __buildAssetsURL, publicAssetsURL as __publicAssetsURL } from 'C:/Users/ormix/StudioProjects/XCargo/node_modules/@nuxt/nitro-server/dist/runtime/utils/paths';
+export { defineAppConfig } from 'C:/Users/ormix/StudioProjects/XCargo/node_modules/@nuxt/nitro-server/dist/runtime/utils/config';
+export { sendAlertEmail } from 'C:/Users/ormix/StudioProjects/XCargo/server/utils/email';
+export { getFirebaseAdmin } from 'C:/Users/ormix/StudioProjects/XCargo/server/utils/firebase';
+export { getGoogleAuth, getGoogleSheetsClient } from 'C:/Users/ormix/StudioProjects/XCargo/server/utils/google';
+export { syncLog } from 'C:/Users/ormix/StudioProjects/XCargo/server/utils/logger';
+export { getSystemStats } from 'C:/Users/ormix/StudioProjects/XCargo/server/utils/stats';
+export { pendingTokens } from 'C:/Users/ormix/StudioProjects/XCargo/server/utils/token-store';

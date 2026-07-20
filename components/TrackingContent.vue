@@ -161,7 +161,7 @@ async function searchByTrackingNumber() {
     const response = await $fetch('/api/track', {
         method: 'POST',
         body: {
-            trackingNumber: trackingNumber.value.trim(),
+            trackingNumber: trackingNumber.value.trim().toUpperCase(),
             token: captchaToken.value
         }
     })
@@ -185,7 +185,7 @@ async function searchByTrackingNumber() {
 
 function validateTrackingNumber() {
   // Allow only letters, numbers, hyphens, and spaces
-  trackingNumber.value = trackingNumber.value.replace(/[^a-zA-Z0-9\s-]/g, '');
+  trackingNumber.value = trackingNumber.value.replace(/[^a-zA-Z0-9\s-]/g, '').toUpperCase();
 }
 
 const getStatusClass = (status) => {

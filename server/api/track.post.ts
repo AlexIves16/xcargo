@@ -57,7 +57,8 @@ export default defineEventHandler(async (event) => {
 
     try {
         const tracksRef = db.collection('tracks')
-        const snapshot = await tracksRef.where('number', '==', trackingNumber.trim()).get()
+        const normalizedNumber = trackingNumber.trim().toUpperCase();
+        const snapshot = await tracksRef.where('number', '==', normalizedNumber).get()
 
         if (snapshot.empty) {
             return { found: false, results: [] }

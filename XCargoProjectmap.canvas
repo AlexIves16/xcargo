@@ -1,0 +1,82 @@
+{
+	"nodes": [
+		{
+			"id": "root",
+			"type": "text",
+			"text": "# 🚀 XCargo Project Map\nЦентральная система управления логистикой",
+			"x": -100,
+			"y": -300,
+			"width": 400,
+			"height": 120,
+			"color": "1"
+		},
+		{
+			"id": "data_sources",
+			"type": "text",
+			"text": "## 📊 Источники данных\n- **Google Sheets API**: Мастер-таблица менеджеров\n- **Firebase Auth**: Управление пользователями",
+			"x": -450,
+			"y": -100,
+			"width": 300,
+			"height": 150
+		},
+		{
+			"id": "backend_logic",
+			"type": "text",
+			"text": "## ⚙️ Backend Logic (Nitro)\n- **Sync Engine**: Обработка Google Sheets -> Firestore\n- **Audit Logic**: Поиск дублей и пустых строк\n- **Archive System**: Авто-архивация (14 дней)",
+			"x": -100,
+			"y": -100,
+			"width": 400,
+			"height": 180,
+			"color": "2"
+		},
+		{
+			"id": "database",
+			"type": "text",
+			"text": "## 🗄️ Firestore Database\n- **tracks**: Статусы и история (Admin View)\n- **user_tracks**: Личные списки клиентов\n- **system**: Логи и блокировки",
+			"x": 350,
+			"y": -100,
+			"width": 350,
+			"height": 150,
+			"color": "3"
+		},
+		{
+			"id": "logic_details",
+			"type": "text",
+			"text": "## 📦 Жизненный цикл трек-номера\n\n### 1. Добавление пользователем\n- Создается запись в `user_tracks`.\n- Если номера нет в `tracks`, создается 'pending' заглушка.\n- Если номер есть, UID пользователя добавляется в `userIds`.\n\n### 2. Синхронизация (Sheets -> DB)\n- Скрипт читает Google Таблицу.\n- Сопоставляет строки с `user_tracks`.\n- Обогащает `tracks` именами и описаниями клиентов.\n\n### 3. Умное удаление (Тот самый 'Если')\n- **Если** трека нет в таблице, но он есть у пользователя ➔ **ОСТАВЛЯЕМ** (храним 60 дней).\n- **Если** трека нет в таблице и нет у пользователей ➔ **УДАЛЯЕМ**.\n- **Если** трек получен > 14 дней назад ➔ **В АРХИВ**.",
+			"x": 350,
+			"y": 100,
+			"width": 450,
+			"height": 350,
+			"color": "4"
+		},
+		{
+			"id": "admin_ui",
+			"type": "text",
+			"text": "## 👑 Admin Interface\n- Живой лог (UTC+5)\n- Мониторинг синхронизации\n- Управление базой",
+			"x": -300,
+			"y": 150,
+			"width": 250,
+			"height": 120,
+			"color": "4"
+		},
+		{
+			"id": "user_ui",
+			"type": "text",
+			"text": "## 📱 User Dashboard\n- Личный список посылок\n- PWA (Доступ на главном экране)\n- Push-уведомления",
+			"x": 50,
+			"y": 150,
+			"width": 300,
+			"height": 120,
+			"color": "6"
+		}
+	],
+	"edges": [
+		{ "id": "e1", "fromNode": "data_sources", "fromSide": "right", "toNode": "backend_logic", "toSide": "left" },
+		{ "id": "e2", "fromNode": "backend_logic", "fromSide": "right", "toNode": "database", "toSide": "left" },
+		{ "id": "e3", "fromNode": "backend_logic", "fromSide": "bottom", "toNode": "admin_ui", "toSide": "top" },
+		{ "id": "e4", "fromNode": "database", "fromSide": "bottom", "toNode": "user_ui", "toSide": "top" },
+		{ "id": "e5", "fromNode": "user_ui", "fromSide": "right", "toNode": "logic_details", "toSide": "left" },
+		{ "id": "e6", "fromNode": "logic_details", "fromSide": "top", "toNode": "database", "toSide": "bottom" },
+		{ "id": "e7", "fromNode": "root", "fromSide": "bottom", "toNode": "backend_logic", "toSide": "top" }
+	]
+}
