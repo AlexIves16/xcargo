@@ -173,10 +173,11 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
         }
 
         // Build sheet data map (Normalized keys) with audit
+        // При дубликатах берём ПОСЛЕДНЕЕ вхождение (обычно самое свежее)
         const sheetRows = new Map();
         let emptyRows = 0;
         let duplicateRows = 0;
-        const duplicatesList: string[] = [];
+        const duplicatesWithDiff: string[] = [];
 
         for (let i = 1; i < activeRows.length; i++) {
             const row = activeRows[i];
@@ -187,25 +188,34 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
                 continue;
             }
 
-            if (sheetRows.has(trackNum)) {
-                duplicateRows++;
-                if (duplicatesList.length < 5) duplicatesList.push(trackNum);
-                continue;
-            }
-
-            sheetRows.set(trackNum, { 
+            const newEntry = {
                 lastChinaStatus: row[1] || '',
                 lastSecondaryStatus: row[2] || '',
-                // We assume columns D, E, F, G might have other data but we prioritize user data for Admin view
                 sheetDescription: row[3] || '',
                 sheetUserName: row[5] || '',
                 sheetUserEmail: row[6] || ''
-            });
+            };
+
+            if (sheetRows.has(trackNum)) {
+                duplicateRows++;
+                // Логируем дубликаты с разными статусами (первые 3)
+                if (duplicatesWithDiff.length < 3) {
+                    const prev = sheetRows.get(trackNum);
+                    if (prev.lastChinaStatus !== newEntry.lastChinaStatus || prev.lastSecondaryStatus !== newEntry.lastSecondaryStatus) {
+                        duplicatesWithDiff.push(`${trackNum}: "${prev.lastChinaStatus}" → "${newEntry.lastChinaStatus}"`);
+                    }
+                }
+            }
+
+            // Всегда перезаписываем — берём последнее вхождение
+            sheetRows.set(trackNum, newEntry);
         }
 
         if (emptyRows > 0) await syncLog(`⚠️ Пропущено пустых строк: ${emptyRows}`);
-        if (duplicateRows > 0) await syncLog(`⚠️ Найдено дубликатов в таблице: ${duplicateRows} (напр: ${duplicatesList.join(', ')})`);
-        
+        if (duplicateRows > 0) {
+            await syncLog(`⚠️ Найдено дубликатов: ${duplicateRows}. Используем последнее вхождение.`);
+            if (duplicatesWithDiff.length > 0) await syncLog(`🔁 Дубликаты с разными статусами: ${duplicatesWithDiff.join(' | ')}`);
+        }
         await syncLog(`Итого уникальных треков в таблице: ${sheetRows.size}`);
         
         // 1. Fetch ALL user claims to enrich the main table
