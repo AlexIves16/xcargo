@@ -217,6 +217,15 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
             if (duplicatesWithDiff.length > 0) await syncLog(`🔁 Дубликаты с разными статусами: ${duplicatesWithDiff.join(' | ')}`);
         }
         await syncLog(`Итого уникальных треков в таблице: ${sheetRows.size}`);
+
+        // 🔍 ДИАГНОСТИКА: проверяем конкретный трек
+        const DEBUG_TRACK = 'YT8881025237296';
+        if (sheetRows.has(DEBUG_TRACK)) {
+            const d = sheetRows.get(DEBUG_TRACK);
+            await syncLog(`🔍 [ДИАГНОСТИКА] ${DEBUG_TRACK} НАЙДЕН в таблице. China: "${d.lastChinaStatus}" | Secondary: "${d.lastSecondaryStatus}"`);
+        } else {
+            await syncLog(`🔍 [ДИАГНОСТИКА] ${DEBUG_TRACK} НЕ НАЙДЕН в таблице (попадёт в "не найдено в таблице")`);
+        }
         
         // 1. Fetch ALL user claims to enrich the main table
         const userClaimsSnap = await db.collection('user_tracks').get();
@@ -280,6 +289,13 @@ async function processSyncInBackground(SPREADSHEET_ID: string, config: any) {
 
                 const chinaChanged = sheetData.lastChinaStatus !== data.lastChinaStatus;
                 const secondaryChanged = sheetData.lastSecondaryStatus !== data.lastSecondaryStatus;
+
+                // 🔍 ДИАГНОСТИКА для конкретного трека
+                if (trackNum === 'YT8881025237296') {
+                    await syncLog(`🔍 [FB] China: "${data.lastChinaStatus}" | Secondary: "${data.lastSecondaryStatus}"`);
+                    await syncLog(`🔍 [Sheet] China: "${sheetData.lastChinaStatus}" | Secondary: "${sheetData.lastSecondaryStatus}"`);
+                    await syncLog(`🔍 chinaChanged=${chinaChanged}, secondaryChanged=${secondaryChanged}`);
+                }
 
                 const hasChanged = chinaChanged || secondaryChanged ||
                                  targetDescription !== data.description ||
